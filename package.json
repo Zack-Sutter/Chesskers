@@ -2,7 +2,7 @@
   "name": "chess-app",
   "version": "0.1.0",
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": ["packages/*", "server"],
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -62,6 +62,28 @@ export class Board {
 
 
 
+  // Side to move, accounting for a checkers hop lock: mid multi-hop only the
+  // hopping piece may move, so its team is to move regardless of turn parity.
+  get sideToMove(): TeamType {
+
+    if (this.checkersHopPosition) {
+
+      const piece = this.pieces.find((p) =>
+
+        p.samePosition(this.checkersHopPosition!)
+
+      );
+
+      if (piece) return piece.team;
+
+    }
+
+    return this.currentTeam;
+
+  }
+
+
+
   calculateAllMoves() {
 
     this.winningTeam = undefined;

@@ -5,6 +5,7 @@ use crate::board::Board;
 use crate::bot::PlayResult;
 use crate::evaluator::{EvalError, Evaluator};
 use crate::state::{Move, PieceType, PromotionChoice, Team};
+use std::time::{Duration, Instant};
 
 const PROMOTIONS: [PromotionChoice; 4] = [
     PromotionChoice::Queen,
@@ -106,15 +107,24 @@ fn generate_children(board: &Board) -> Vec<ChildMove> {
     children
 }
 
+fn past_deadline(deadline: Option<Instant>) -> bool {
+    deadline.is_some_and(|dl| Instant::now() >= dl)
+}
+
 fn quiescence<E: Evaluator>(
     board: &Board,
     evaluator: &mut E,
     depth: u32,
     mut alpha: f32,
     beta: f32,
+    deadline: Option<Instant>,
 ) -> Result<f32, SearchError> {
     if board.winning_team.is_some() {
         return Ok(terminal_score(board));
+    }
+
+    if past_deadline(deadline) {
+        return evaluator.evaluate(board).map(|r| r.value).map_err(SearchError::Eval);
     }
 
     let stand_pat = evaluator.evaluate(board).map_err(SearchError::Eval)?.value;
@@ -124,11 +134,14 @@ fn quiescence<E: Evaluator>(
 
     let mut best = stand_pat;
     for mv in expand_moves(board) {
+        if past_deadline(deadline) {
+            break;
+        }
         let result = apply_move(board, &mv);
         if !result.ok || result.pending_promotion.is_some() || !result.is_capture {
             continue;
         }
-        let score = -quiescence(&result.board, evaluator, depth + 1, -beta, -alpha)?;
+        let score = -quiescence(&result.board, evaluator, depth + 1, -beta, -alpha, deadline)?;
         best = best.max(score);
         alpha = alpha.max(best);
         if alpha >= beta {
@@ -144,13 +157,18 @@ fn negamax<E: Evaluator>(
     depth: u32,
     mut alpha: f32,
     beta: f32,
+    deadline: Option<Instant>,
 ) -> Result<f32, SearchError> {
     if board.winning_team.is_some() {
         return Ok(terminal_score(board));
     }
 
+    if past_deadline(deadline) {
+        return evaluator.evaluate(board).map(|r| r.value).map_err(SearchError::Eval);
+    }
+
     if depth == 0 {
-        return quiescence(board, evaluator, 0, alpha, beta);
+        return quiescence(board, evaluator, 0, alpha, beta, deadline);
     }
 
     let children = generate_children(board);
@@ -167,7 +185,10 @@ fn negamax<E: Evaluator>(
 
     let mut best = f32::NEG_INFINITY;
     for child in children {
-        let score = -negamax(&child.board, evaluator, depth - 1, -beta, -alpha)?;
+        if past_deadline(deadline) {
+            break;
+        }
+        let score = -negamax(&child.board, evaluator, depth - 1, -beta, -alpha, deadline)?;
         best = best.max(score);
         alpha = alpha.max(best);
         if alpha >= beta {
@@ -185,6 +206,7 @@ pub fn search_best_move<E: Evaluator>(
     board: &Board,
     evaluator: &mut E,
     config: &SearchConfig,
+    deadline: Option<Instant>,
 ) -> Result<Move, SearchError> {
     let children = generate_children(board);
     if children.is_empty() {
@@ -202,16 +224,62 @@ pub fn search_best_move<E: Evaluator>(
     let mut best_score = f32::NEG_INFINITY;
 
     for child in children {
+        if past_deadline(deadline) {
+            break;
+        }
         let score = -negamax(
             &child.board,
             evaluator,
             config.max_depth.saturating_sub(1),
             f32::NEG_INFINITY,
             f32::INFINITY,
+            deadline,
         )?;
         if score > best_score || (score == best_score && child.is_capture) {
             best_score = score;
             best_move = child.mv;
+        }
+    }
+
+    Ok(best_move)
+}
+
+#[derive(Debug, Clone)]
+pub struct TimedSearchConfig {
+    pub max_depth: u32,
+    pub think_ms: u64,
+}
+
+/// Iterative deepening until `think_ms` elapses; returns best move from last completed depth.
+pub fn search_best_move_timed<E: Evaluator>(
+    board: &Board,
+    evaluator: &mut E,
+    config: &TimedSearchConfig,
+) -> Result<Move, SearchError> {
+    let children = generate_children(board);
+    if children.is_empty() {
+        return Err(SearchError::NoLegalMoves);
+    }
+
+    let side = board.current_team();
+    for child in &children {
+        if child.board.winning_team == Some(side) {
+            return Ok(child.mv.clone());
+        }
+    }
+
+    let deadline = Instant::now() + Duration::from_millis(config.think_ms);
+    let mut best_move = children[0].mv.clone();
+    let max_depth = config.max_depth.max(1);
+
+    for depth in 1..=max_depth {
+        if Instant::now() >= deadline {
+            break;
+        }
+        let search_config = SearchConfig { max_depth: depth };
+        best_move = search_best_move(board, evaluator, &search_config, Some(deadline))?;
+        if Instant::now() >= deadline {
+            break;
         }
     }
 
@@ -270,7 +338,7 @@ pub fn play_search_vs_random<E: Evaluator>(
         }
 
         let mv = if board.current_team() == search_as {
-            search_best_move(&board, evaluator, config).map_err(|e| e.to_string())?
+            search_best_move(&board, evaluator, config, None).map_err(|e| e.to_string())?
         } else {
             pick_random_move(&board, &mut rng)
         };
@@ -368,7 +436,7 @@ mod tests {
         let board = load_board("declares_black_winner_when_white_king_hopped");
         let mut evaluator = dummy_evaluator();
         let config = SearchConfig { max_depth: 1 };
-        let mv = search_best_move(&board, &mut evaluator, &config).unwrap();
+        let mv = search_best_move(&board, &mut evaluator, &config, None).unwrap();
         assert_eq!(mv.from.x, 4);
         assert_eq!(mv.from.y, 6);
         assert_eq!(mv.to.x, 2);
@@ -380,7 +448,7 @@ mod tests {
         let board = load_board("pawn_reaches_back_rank_pending_promotion");
         let mut evaluator = dummy_evaluator();
         let config = SearchConfig { max_depth: 1 };
-        let mv = search_best_move(&board, &mut evaluator, &config).unwrap();
+        let mv = search_best_move(&board, &mut evaluator, &config, None).unwrap();
         let result = apply_move(&board, &mv);
         assert!(result.ok);
         assert!(
@@ -432,7 +500,7 @@ mod tests {
         let board = initial_board();
         let mut evaluator = dummy_evaluator();
         let config = SearchConfig { max_depth: 1 };
-        let _ = search_best_move(&board, &mut evaluator, &config).unwrap();
+        let _ = search_best_move(&board, &mut evaluator, &config, None).unwrap();
     }
 
     #[test]

@@ -1,0 +1,41 @@
+.lobby {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  color: white;
+}
+
+.lobby h1 {
+  font-size: clamp(32px, 8vw, 64px);
+  margin: 0;
+}
+
+.lobby-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(90vw, 360px);
+}
+
+.lobby-buttons > button {
+  background-color: #779556;
+  border: none;
+  border-radius: 8px;
+  padding: 20px 24px;
+  font-size: clamp(16px, 3vw, 22px);
+  color: white;
+  cursor: pointer;
+}
+
+.lobby-buttons > button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.lobby-error {
+  color: #e57373;
+  font-size: 16px;
+  max-width: min(90vw, 360px);
+  text-align: center;
+}

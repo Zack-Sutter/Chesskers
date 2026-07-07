@@ -1,8 +1,11 @@
 use crate::apply::apply_move;
 use crate::board::Board;
 use crate::bot::play_random_game;
+use crate::evaluator::OnnxEvaluator;
+use crate::search::{search_best_move_timed, TimedSearchConfig};
 use crate::state::{Move, SerializedBoard, Team};
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct CliError {
@@ -28,6 +31,19 @@ pub struct PlayRandomResult {
     pub winner: Option<Team>,
     #[serde(rename = "movesPlayed")]
     pub moves_played: u32,
+}
+
+#[derive(Debug, Clone)]
+pub struct BestMoveOptions {
+    pub model_path: String,
+    pub think_ms: u64,
+    pub depth: u32,
+}
+
+#[derive(Debug, Serialize, PartialEq, Eq)]
+pub struct BestMoveResult {
+    #[serde(rename = "move")]
+    pub mv: Move,
 }
 
 fn board_from_json(json: &str) -> Result<Board, CliError> {
@@ -96,6 +112,29 @@ pub fn run_with_seed(command: &str, stdin: &str, seed: Option<u64>) -> Result<St
     }
 }
 
+pub fn run_best_move(stdin: &str, options: &BestMoveOptions) -> Result<String, CliError> {
+    let board = board_from_json(stdin)?;
+    let mut evaluator = OnnxEvaluator::from_file(Path::new(&options.model_path)).map_err(|e| {
+        CliError {
+            error: e.to_string(),
+        }
+    })?;
+    let mv = search_best_move_timed(
+        &board,
+        &mut evaluator,
+        &TimedSearchConfig {
+            max_depth: options.depth,
+            think_ms: options.think_ms,
+        },
+    )
+    .map_err(|e| CliError {
+        error: e.to_string(),
+    })?;
+    serde_json::to_string(&BestMoveResult { mv }).map_err(|e| CliError {
+        error: e.to_string(),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -105,6 +144,50 @@ mod tests {
 
     fn fixtures_dir() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../fixtures")
+    }
+
+    #[test]
+    fn best_move_returns_legal_move_within_budget() {
+        use std::path::PathBuf;
+        use std::time::Instant;
+
+        let fixture: Value = serde_json::from_str(
+            &fs::read_to_string(fixtures_dir().join("initial_board.json")).unwrap(),
+        )
+        .unwrap();
+        let model = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("models/dummy.onnx");
+        let options = BestMoveOptions {
+            model_path: model.to_string_lossy().into_owned(),
+            think_ms: 500,
+            depth: 4,
+        };
+        let start = Instant::now();
+        let out = run_best_move(
+            &serde_json::to_string(&fixture["board"]).unwrap(),
+            &options,
+        )
+        .unwrap();
+        assert!(
+            start.elapsed().as_millis() <= options.think_ms as u128 + 150,
+            "best-move exceeded think-ms budget ({} ms)",
+            start.elapsed().as_millis()
+        );
+
+        let parsed: Value = serde_json::from_str(&out).unwrap();
+        let mv = &parsed["move"];
+        assert!(mv["from"]["x"].is_number());
+        assert!(mv["to"]["x"].is_number());
+
+        let board = board_from_json(&serde_json::to_string(&fixture["board"]).unwrap()).unwrap();
+        assert!(
+            board.all_legal_moves().iter().any(|legal| {
+                legal.from.x == mv["from"]["x"].as_u64().unwrap() as u8
+                    && legal.from.y == mv["from"]["y"].as_u64().unwrap() as u8
+                    && legal.to.x == mv["to"]["x"].as_u64().unwrap() as u8
+                    && legal.to.y == mv["to"]["y"].as_u64().unwrap() as u8
+            }),
+            "returned move must be legal: {mv}"
+        );
     }
 
     #[test]

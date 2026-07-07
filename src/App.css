@@ -14,3 +14,24 @@
     width: min(96vw, calc(100vh - 4rem), 1600px);
     aspect-ratio: 1;
 }
+
+.game-status {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.exit-button {
+    background: none;
+    border: 1px solid #555;
+    border-radius: 6px;
+    color: white;
+    padding: 4px 10px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.exit-button:hover {
+    background-color: #333;
+}

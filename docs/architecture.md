@@ -502,7 +502,7 @@ Each milestone is **independently assignable**. Before starting:
   - **Touch:** `engine/src/search.rs`
   - **Done when:** beats E1-6 random bot >90% over 100-game suite
 
-- [ ] **E2-4** — `best-move` CLI
+- [x] **E2-4** — `best-move` CLI
   - **Prerequisites:** E2-3
   - **Touch:** `engine/src/main.rs`
   - **Done when:** returns legal move within `--think-ms` budget per [§6](#6-rust-engine-cli)
@@ -511,27 +511,27 @@ Each milestone is **independently assignable**. Before starting:
 
 ### S1 — Server + UI vs engine
 
-- [ ] **S1-1** — Scaffold server
+- [x] **S1-1** — Scaffold server
   - **Prerequisites:** M0-4
   - **Touch:** `server/` (Fastify + `ws`)
   - **Done when:** `GET /health` → `{ ok: true }`
 
-- [ ] **S1-2** — Create game endpoint
+- [x] **S1-2** — Create game endpoint
   - **Prerequisites:** S1-1, M0-4
   - **Touch:** `server/src/routes.ts`
   - **Done when:** `POST /games` returns `{ gameId, initialState }`
 
-- [ ] **S1-3** — WebSocket move pipeline
+- [x] **S1-3** — WebSocket move pipeline
   - **Prerequisites:** S1-2, M0-5
   - **Touch:** `server/`
   - **Done when:** authoritative moves work; see [migration doc §7](./railway-vercel-migration.md#7-server-side-move-pipeline); local two-tab test passes
 
-- [ ] **S1-4** — Engine integration
+- [x] **S1-4** — Engine integration
   - **Prerequisites:** S1-3, E2-4
   - **Touch:** `server/` + engine binary
   - **Done when:** `POST /games/:id/engine` enables AI; `requestEngineMove` triggers Rust `best-move` and broadcasts `state`
 
-- [ ] **S1-5** — React vs-engine mode
+- [x] **S1-5** — React vs-engine mode
   - **Prerequisites:** S1-4
   - **Touch:** `[Referee.tsx](../src/components/Referee/Referee.tsx)`, lobby route
   - **Done when:** full game vs engine in browser; local hot-seat still works

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   applyMove,
@@ -11,301 +11,226 @@ import {
 } from "game-engine";
 
 import Chessboard from "../Chessboard/Chessboard";
+import type { GameRoom } from "../../hooks/useGameRoom";
 
 import { Howl } from "howler";
 
+const moveSound = new Howl({ src: ["/sounds/move-self.mp3"] });
+const captureSound = new Howl({ src: ["/sounds/capture.mp3"] });
+const checkmateSound = new Howl({ src: ["/sounds/move-check.mp3"] });
 
+const PROMOTION_TYPES: { type: PieceType; label: string }[] = [
+  { type: PieceType.ROOK, label: "Rook" },
+  { type: PieceType.BISHOP, label: "Bishop" },
+  { type: PieceType.KNIGHT, label: "Knight" },
+  { type: PieceType.QUEEN, label: "Queen" },
+];
 
-const moveSound = new Howl({
+const PROMOTION_CHOICE: Record<PieceType, "queen" | "rook" | "bishop" | "knight" | null> = {
+  [PieceType.QUEEN]: "queen",
+  [PieceType.ROOK]: "rook",
+  [PieceType.BISHOP]: "bishop",
+  [PieceType.KNIGHT]: "knight",
+  [PieceType.PAWN]: null,
+  [PieceType.KING]: null,
+  [PieceType.CHECKERS]: null,
+};
 
-  src: ["/sounds/move-self.mp3"],
+interface PromotionTarget {
+  x: number;
+  y: number;
+  team: TeamType;
+}
 
-});
+interface Props {
+  room?: GameRoom;
+  onExit?: () => void;
+}
 
+export default function Referee({ room, onExit }: Props) {
+  const online = room != null;
 
+  const [localBoard, setLocalBoard] = useState<Board>(initialBoard.clone());
+  const [localPromotion, setLocalPromotion] = useState<PromotionTarget | null>(
+    null
+  );
+  const soundStateRef = useRef<{
+    count: number;
+    turns: number;
+    winner?: TeamType;
+  } | null>(null);
 
-const captureSound = new Howl({
+  const board = online ? room!.board : localBoard;
 
-  src: ["/sounds/capture.mp3"],
+  const promotion: PromotionTarget | null = online
+    ? room!.pendingPromotion && room!.myColor
+      ? { ...room!.pendingPromotion, team: room!.myColor }
+      : null
+    : localPromotion;
 
-});
+  const gameOver = board?.winningTeam !== undefined;
 
-
-
-const checkmateSound = new Howl({
-
-  src: ["/sounds/move-check.mp3"],
-
-});
-
-
-
-export default function Referee() {
-
-  const [board, setBoard] = useState<Board>(initialBoard.clone());
-
-  const [promotionPawn, setPromotionPawn] = useState<Piece>();
-
-  const modalRef = useRef<HTMLDivElement>(null);
-
-  const gameOverModalRef = useRef<HTMLDivElement>(null);
-
-
+  // Online mode is server-driven, so play sounds by diffing incoming boards.
+  useEffect(() => {
+    if (!online || !board) return;
+    const count = board.pieces.length;
+    const turns = board.totalTurns;
+    const prev = soundStateRef.current;
+    soundStateRef.current = { count, turns, winner: board.winningTeam };
+    if (!prev) return;
+    if (board.winningTeam !== undefined && prev.winner === undefined) {
+      checkmateSound.play();
+    } else if (count < prev.count) {
+      captureSound.play();
+    } else if (turns !== prev.turns) {
+      moveSound.play();
+    }
+  }, [online, board]);
 
   function playMove(playedPiece: Piece, destination: Position): boolean {
+    if (online) {
+      return room!.sendMove(playedPiece.position, destination);
+    }
 
-    const result = applyMove(board, {
-
-      from: {
-
-        x: playedPiece.position.x,
-
-        y: playedPiece.position.y,
-
-      },
-
+    const result = applyMove(localBoard, {
+      from: { x: playedPiece.position.x, y: playedPiece.position.y },
       to: { x: destination.x, y: destination.y },
-
     });
-
-
 
     if (!result.ok) {
-
       return false;
-
     }
 
-
-
-    setBoard(result.board);
-
-
+    setLocalBoard(result.board);
 
     if (result.isCapture) {
-
       captureSound.play();
-
     } else {
-
       moveSound.play();
-
     }
-
-
 
     if (result.board.winningTeam !== undefined) {
-
-      gameOverModalRef.current?.classList.remove("hidden");
-
       checkmateSound.play();
-
     }
-
-
 
     if (result.pendingPromotion) {
-
-      modalRef.current?.classList.remove("hidden");
-
-      const promotedSquare = result.pendingPromotion;
-
-      setPromotionPawn(() => {
-
-        const pawn = result.board.pieces.find(
-
-          (p) =>
-
-            p.isPawn &&
-
-            p.position.x === promotedSquare.x &&
-
-            p.position.y === promotedSquare.y
-
-        );
-
-        return pawn?.clone();
-
-      });
-
+      const pawn = result.board.pieces.find(
+        (p) =>
+          p.isPawn &&
+          p.position.x === result.pendingPromotion!.x &&
+          p.position.y === result.pendingPromotion!.y
+      );
+      if (pawn) {
+        setLocalPromotion({
+          x: pawn.position.x,
+          y: pawn.position.y,
+          team: pawn.team,
+        });
+      }
     }
-
-
 
     return true;
-
   }
-
-
 
   function promotePawn(pieceType: PieceType) {
+    if (!promotion) return;
 
-    if (promotionPawn === undefined) {
-
+    if (online) {
+      const choice = PROMOTION_CHOICE[pieceType];
+      if (choice) room!.sendPromotion(choice);
       return;
-
     }
 
-
-
-    setBoard((previousBoard) => {
-
+    setLocalBoard((previousBoard) => {
       const clonedBoard = previousBoard.clone();
-
-      clonedBoard.pieces = clonedBoard.pieces.reduce((results, piece) => {
-
-        if (piece.samePiecePosition(promotionPawn)) {
-
-          results.push(
-
-            new Piece(piece.position.clone(), pieceType, piece.team, true)
-
-          );
-
-        } else {
-
-          results.push(piece);
-
-        }
-
-        return results;
-
-      }, [] as Piece[]);
-
-
-
+      clonedBoard.pieces = clonedBoard.pieces.map((piece) =>
+        piece.position.x === promotion.x && piece.position.y === promotion.y
+          ? new Piece(piece.position.clone(), pieceType, piece.team, true)
+          : piece
+      );
       clonedBoard.calculateAllMoves();
-
-
-
       return clonedBoard;
-
     });
-
-
-
-    modalRef.current?.classList.add("hidden");
-
+    setLocalPromotion(null);
   }
-
-
 
   function promotionTeamType() {
-
-    return promotionPawn?.team === TeamType.OUR ? "w" : "b";
-
+    return promotion?.team === TeamType.OUR ? "w" : "b";
   }
-
-
 
   function restartGame() {
-
-    gameOverModalRef.current?.classList.add("hidden");
-
-    setBoard(initialBoard.clone());
-
+    if (online) {
+      onExit?.();
+      return;
+    }
+    setLocalBoard(initialBoard.clone());
+    setLocalPromotion(null);
   }
-
-
 
   function gameOverMessage(): string {
-
-    if (board.winningTeam === TeamType.OPPONENT) {
-
+    if (board?.winningTeam === TeamType.OPPONENT) {
       return "Black wins — white king jumped and burgled!";
-
     }
-
     return "White wins — all black pieces captured!";
-
   }
 
-
+  function statusText(): string {
+    if (!online) return `Total turns: ${board?.totalTurns ?? 0}`;
+    if (room!.status === "connecting") return "Connecting…";
+    if (room!.error) return room!.error;
+    if (room!.engineThinking) return "Engine thinking…";
+    if (!board) return "Waiting for game…";
+    return room!.isMyTurn ? "Your move" : "Engine to move";
+  }
 
   return (
-
     <>
-
-      <p style={{ color: "white", fontSize: "14px", textAlign: "center" }}>
-
-        Total turns: {board.totalTurns}
-
-      </p>
-
-      <div className="modal hidden" ref={modalRef}>
-
-        <div className="modal-body">
-
-          <img
-
-            alt="Promote to Rook"
-
-            onClick={() => promotePawn(PieceType.ROOK)}
-
-            src={`/assets/images/rook_${promotionTeamType()}.png`}
-
-          />
-
-          <img
-
-            alt="Promote to Bishop"
-
-            onClick={() => promotePawn(PieceType.BISHOP)}
-
-            src={`/assets/images/bishop_${promotionTeamType()}.png`}
-
-          />
-
-          <img
-
-            alt="Promote to Knight"
-
-            onClick={() => promotePawn(PieceType.KNIGHT)}
-
-            src={`/assets/images/knight_${promotionTeamType()}.png`}
-
-          />
-
-          <img
-
-            alt="Promote to Queen"
-
-            onClick={() => promotePawn(PieceType.QUEEN)}
-
-            src={`/assets/images/queen_${promotionTeamType()}.png`}
-
-          />
-
-        </div>
-
+      <div className="game-status">
+        {onExit && (
+          <button className="exit-button" onClick={onExit}>
+            ← Lobby
+          </button>
+        )}
+        <span style={{ color: "white", fontSize: "14px" }}>{statusText()}</span>
       </div>
 
-      <div className="modal hidden" ref={gameOverModalRef}>
-
+      <div className={`modal ${promotion ? "" : "hidden"}`}>
         <div className="modal-body">
-
-          <div className="checkmate-body">
-
-            <span>{gameOverMessage()}</span>
-
-            <button onClick={restartGame}>Play again</button>
-
-          </div>
-
+          {PROMOTION_TYPES.map(({ type, label }) => (
+            <img
+              key={label}
+              alt={`Promote to ${label}`}
+              onClick={() => promotePawn(type)}
+              src={`/assets/images/${label.toLowerCase()}_${promotionTeamType()}.png`}
+            />
+          ))}
         </div>
+      </div>
 
+      <div className={`modal ${gameOver ? "" : "hidden"}`}>
+        <div className="modal-body">
+          <div className="checkmate-body">
+            <span>{gameOverMessage()}</span>
+            <button onClick={restartGame}>
+              {online ? "Back to lobby" : "Play again"}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="board-viewport">
-        <Chessboard
-          playMove={playMove}
-          pieces={board.pieces}
-          hopContinuationPosition={board.checkersHopPosition}
-        />
+        {board ? (
+          <Chessboard
+            playMove={playMove}
+            pieces={board.pieces}
+            hopContinuationPosition={board.checkersHopPosition}
+          />
+        ) : (
+          <p style={{ color: "white", textAlign: "center" }}>
+            {room?.error ?? "Connecting to game…"}
+          </p>
+        )}
       </div>
-
     </>
-
   );
-
 }

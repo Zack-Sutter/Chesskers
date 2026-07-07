@@ -69,6 +69,21 @@ function applyPromotionChoice(
   );
 }
 
+export function applyPromotion(
+  board: Board,
+  pending: PendingPromotion,
+  choice: PromotionChoice
+): Board {
+  const nextBoard = board.clone();
+  applyPromotionChoice(
+    nextBoard,
+    new Position(pending.x, pending.y),
+    choice
+  );
+  nextBoard.calculateAllMoves();
+  return nextBoard;
+}
+
 export function applyMove(board: Board, move: Move): ApplyMoveResult {
   const nextBoard = board.clone();
   const destination = new Position(move.to.x, move.to.y);
