@@ -2,7 +2,7 @@ use crate::rules::{
     castling_moves, possible_bishop_moves, possible_checkers_moves, possible_king_moves,
     possible_knight_moves, possible_pawn_moves, possible_queen_moves, possible_rook_moves,
 };
-use crate::state::{Coord, PieceType, SerializedBoard, SerializedPiece, Team};
+use crate::state::{Coord, Move, PieceType, SerializedBoard, SerializedPiece, Team};
 
 #[derive(Debug, Clone)]
 pub struct Piece {
@@ -116,6 +116,41 @@ impl Board {
             .find(|p| p.coord == from)
             .map(|p| p.possible_moves.clone())
             .unwrap_or_default()
+    }
+
+    pub fn all_legal_moves(&self) -> Vec<Move> {
+        let mut moves = Vec::new();
+        for piece in &self.pieces {
+            for to in &piece.possible_moves {
+                moves.push(Move {
+                    from: piece.coord,
+                    to: *to,
+                    promotion: None,
+                });
+            }
+        }
+        moves
+    }
+
+    pub fn to_serialized(&self) -> SerializedBoard {
+        SerializedBoard {
+            schema_version: 1,
+            pieces: self
+                .pieces
+                .iter()
+                .map(|p| SerializedPiece {
+                    x: p.coord.x,
+                    y: p.coord.y,
+                    piece_type: p.piece_type,
+                    team: p.team,
+                    has_moved: p.has_moved,
+                    en_passant: (p.piece_type == PieceType::Pawn && p.en_passant).then_some(true),
+                })
+                .collect(),
+            total_turns: self.total_turns,
+            checkers_hop_position: self.checkers_hop_position,
+            winning_team: self.winning_team,
+        }
     }
 }
 
