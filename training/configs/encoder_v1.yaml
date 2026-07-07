@@ -1,0 +1,31 @@
+# encoder_v1 — NN input tensor layout for Chesskers.
+#
+# Canonical spec shared by the Python trainer (training/chesskers/encoder.py)
+# and the Rust engine (engine/src/encoder.rs). Both encoders must produce
+# byte-identical tensors on every fixtures/*.json case, verified via FNV-1a
+# golden hashes (tests/test_encoder.py mirrors engine/src/encoder.rs).
+# See docs/architecture.md §5.4. Breaking layout changes -> encoder_v2.yaml.
+version: 1
+board_dim: 8
+num_planes: 16
+tensor_shape: [16, 8, 8] # [plane, y, x]; C-order flat index = plane*64 + y*8 + x
+dtype: float32
+
+# Piece-occupancy planes: 1.0 where a piece of (team, type) sits, 0.0 elsewhere.
+# plane = piece_plane_base[team] + piece_type_offset[type]
+piece_plane_base:
+  w: 0
+  b: 7
+piece_type_offset:
+  pawn: 0
+  rook: 1
+  bishop: 2
+  knight: 3
+  queen: 4
+  king: 5
+  checkers: 6
+
+# Metadata planes.
+planes:
+  side_to_move: 14 # full 8x8 fill: 1.0 if white to move, 0.0 if black
+  checkers_hop: 15 # 1.0 at checkersHopPosition square, 0.0 elsewhere

@@ -304,7 +304,7 @@ Maximum policy logits: 16384 (4096 × 4 promotion choices). Mask illegal indices
 
 ### 5.4 NN input encoding (encoder_v1)
 
-Spec file: `training/configs/encoder_v1.yaml` (placeholder until T1-3).
+Spec file: `training/configs/encoder_v1.yaml` (created at T1-3; loaded by the Python encoder and mirrored by `engine/src/encoder.rs`).
 
 | Plane(s) | Description                                                           |
 | -------- | --------------------------------------------------------------------- |
@@ -544,17 +544,17 @@ Follow checklist in [railway-vercel-migration.md §12](./railway-vercel-migratio
 
 ### T1 — Python training pipeline (offline)
 
-- [ ] **T1-1** — Scaffold training package
+- [x] **T1-1** — Scaffold training package
   - **Prerequisites:** M0-7
   - **Touch:** `training/requirements.txt`, `training/README.md`
   - **Done when:** `pip install -r requirements.txt` succeeds (torch, numpy, onnx, pyyaml)
 
-- [ ] **T1-2** — Python rules mirror
+- [x] **T1-2** — Python rules mirror
   - **Prerequisites:** T1-1
   - **Touch:** `training/chesskers/` rules module
   - **Done when:** `pytest` passes all `fixtures/` assertions (legal moves, terminals, apply-move sequences)
 
-- [ ] **T1-3** — Python board encoder
+- [x] **T1-3** — Python board encoder
   - **Prerequisites:** T1-2
   - **Touch:** `training/chesskers/encoder.py`, `training/configs/encoder_v1.yaml`
   - **Done when:** encoder output matches E2-1 Rust encoder on fixtures

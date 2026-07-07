@@ -1,0 +1,7 @@
+# Chesskers Python training pipeline (offline). See docs/architecture.md §9.
+# Lower bounds chosen for Python 3.13 support; upper caps avoid unvetted majors.
+torch>=2.6,<3
+numpy>=2.1,<3
+onnx>=1.17,<2
+pyyaml>=6.0,<7
+pytest>=8.0,<9
