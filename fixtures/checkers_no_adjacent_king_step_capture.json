@@ -1,0 +1,46 @@
+{
+  "name": "checkers_no_adjacent_king_step_capture",
+  "board": {
+    "schemaVersion": 1,
+    "totalTurns": 2,
+    "pieces": [
+      {
+        "x": 3,
+        "y": 6,
+        "type": "checkers",
+        "team": "b",
+        "hasMoved": false
+      },
+      {
+        "x": 4,
+        "y": 7,
+        "type": "pawn",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "type": "king",
+        "team": "w",
+        "hasMoved": false
+      }
+    ]
+  },
+  "expect": {
+    "legalMovesFrom": [
+      {
+        "from": {
+          "x": 3,
+          "y": 6
+        },
+        "exclude": [
+          {
+            "x": 4,
+            "y": 7
+          }
+        ]
+      }
+    ]
+  }
+}

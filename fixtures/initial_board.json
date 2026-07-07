@@ -1,0 +1,138 @@
+{
+  "name": "initial_board",
+  "board": {
+    "schemaVersion": 1,
+    "pieces": [
+      {
+        "x": 3,
+        "y": 6,
+        "type": "checkers",
+        "team": "b",
+        "hasMoved": false
+      },
+      {
+        "x": 4,
+        "y": 6,
+        "type": "checkers",
+        "team": "b",
+        "hasMoved": false
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "type": "rook",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "type": "knight",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "type": "bishop",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "type": "queen",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 4,
+        "y": 0,
+        "type": "king",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 5,
+        "y": 0,
+        "type": "bishop",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 6,
+        "y": 0,
+        "type": "knight",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 7,
+        "y": 0,
+        "type": "rook",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "type": "pawn",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 1,
+        "y": 1,
+        "type": "pawn",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "type": "pawn",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 3,
+        "y": 1,
+        "type": "pawn",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 4,
+        "y": 1,
+        "type": "pawn",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 5,
+        "y": 1,
+        "type": "pawn",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 6,
+        "y": 1,
+        "type": "pawn",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 7,
+        "y": 1,
+        "type": "pawn",
+        "team": "w",
+        "hasMoved": false
+      }
+    ],
+    "totalTurns": 1
+  },
+  "expect": {
+    "pieceCount": 18
+  }
+}

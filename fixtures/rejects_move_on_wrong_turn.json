@@ -1,0 +1,46 @@
+{
+  "name": "rejects_move_on_wrong_turn",
+  "board": {
+    "schemaVersion": 1,
+    "totalTurns": 2,
+    "pieces": [
+      {
+        "x": 0,
+        "y": 1,
+        "type": "pawn",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 4,
+        "y": 0,
+        "type": "king",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 3,
+        "y": 6,
+        "type": "checkers",
+        "team": "b",
+        "hasMoved": false
+      }
+    ]
+  },
+  "expect": {
+    "applyOk": false,
+    "totalTurns": 2
+  },
+  "action": {
+    "move": {
+      "from": {
+        "x": 0,
+        "y": 1
+      },
+      "to": {
+        "x": 0,
+        "y": 2
+      }
+    }
+  }
+}

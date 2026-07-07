@@ -1,16 +1,13 @@
 import { useRef, useState } from "react";
 
-import { initialBoard } from "game-engine";
-
 import {
+  applyMove,
+  initialBoard,
   Board,
   Piece,
   Position,
-  Pawn,
   PieceType,
   TeamType,
-  getSingleJumpMoves,
-  isCheckersJump,
 } from "game-engine";
 
 import Chessboard from "../Chessboard/Chessboard";
@@ -57,25 +54,23 @@ export default function Referee() {
 
   function playMove(playedPiece: Piece, destination: Position): boolean {
 
-    if (playedPiece.possibleMoves === undefined) return false;
+    const result = applyMove(board, {
+
+      from: {
+
+        x: playedPiece.position.x,
+
+        y: playedPiece.position.y,
+
+      },
+
+      to: { x: destination.x, y: destination.y },
+
+    });
 
 
 
-    if (board.checkersHopPosition) {
-
-      if (!playedPiece.samePosition(board.checkersHopPosition)) return false;
-
-    } else if (playedPiece.team === TeamType.OUR && board.totalTurns % 2 !== 1) {
-
-      return false;
-
-    } else if (
-
-      playedPiece.team === TeamType.OPPONENT &&
-
-      board.totalTurns % 2 !== 0
-
-    ) {
+    if (!result.ok) {
 
       return false;
 
@@ -83,174 +78,53 @@ export default function Referee() {
 
 
 
-    let playedMoveIsValid = false;
+    setBoard(result.board);
 
 
 
-    const validMove = playedPiece.possibleMoves?.some((m) =>
+    if (result.isCapture) {
 
-      m.samePosition(destination)
+      captureSound.play();
 
-    );
+    } else {
 
+      moveSound.play();
 
+    }
 
-    if (!validMove) return false;
 
 
+    if (result.board.winningTeam !== undefined) {
 
-    const enPassantMove = isEnPassantMove(
+      gameOverModalRef.current?.classList.remove("hidden");
 
-      playedPiece.position,
+      checkmateSound.play();
 
-      destination,
+    }
 
-      playedPiece.type,
 
-      playedPiece.team
 
-    );
-
-
-
-    const checkersJump =
-
-      playedPiece.isCheckers &&
-
-      isCheckersJump(
-
-        playedPiece.position,
-
-        destination,
-
-        board.pieces,
-
-        playedPiece.team
-
-      );
-
-    const isCapture =
-
-      enPassantMove ||
-
-      checkersJump ||
-
-      board.pieces.some(
-
-        (p) =>
-
-          p.samePosition(destination) && p.team !== playedPiece.team
-
-      );
-
-
-
-    setBoard((prev) => {
-
-      const clonedBoard = prev.clone();
-
-      playedMoveIsValid = clonedBoard.playMove(
-
-        enPassantMove,
-
-        validMove,
-
-        playedPiece,
-
-        destination
-
-      );
-
-
-
-      if (!playedMoveIsValid) return prev;
-
-      if (clonedBoard.winningTeam === undefined) {
-        if (playedPiece.isCheckers && checkersJump) {
-
-          const movedCheckers = clonedBoard.pieces.find(
-
-            (p) =>
-
-              p.isCheckers &&
-
-              p.team === playedPiece.team &&
-
-              p.samePosition(destination)
-
-          );
-
-          const moreJumps =
-
-            movedCheckers !== undefined &&
-
-            getSingleJumpMoves(movedCheckers, clonedBoard.pieces).length > 0;
-
-
-
-          if (moreJumps) {
-
-            clonedBoard.checkersHopPosition = destination.clone();
-
-          } else {
-
-            clonedBoard.checkersHopPosition = undefined;
-
-            clonedBoard.totalTurns += 1;
-
-          }
-
-        } else {
-          clonedBoard.checkersHopPosition = undefined;
-          clonedBoard.totalTurns += 1;
-        }
-      }
-
-      clonedBoard.calculateAllMoves();
-
-      if (isCapture) {
-
-        captureSound.play();
-
-      } else {
-
-        moveSound.play();
-
-      }
-
-
-
-      if (clonedBoard.winningTeam !== undefined) {
-
-        gameOverModalRef.current?.classList.remove("hidden");
-
-        checkmateSound.play();
-
-      }
-
-
-
-      return clonedBoard;
-
-    });
-
-
-
-    const promotionRow = playedPiece.team === TeamType.OUR ? 7 : 0;
-
-
-
-    if (destination.y === promotionRow && playedPiece.isPawn) {
+    if (result.pendingPromotion) {
 
       modalRef.current?.classList.remove("hidden");
 
+      const promotedSquare = result.pendingPromotion;
+
       setPromotionPawn(() => {
 
-        const clonedPlayedPiece = playedPiece.clone();
+        const pawn = result.board.pieces.find(
 
-        clonedPlayedPiece.position = destination.clone();
+          (p) =>
 
-        return clonedPlayedPiece;
+            p.isPawn &&
+
+            p.position.x === promotedSquare.x &&
+
+            p.position.y === promotedSquare.y
+
+        );
+
+        return pawn?.clone();
 
       });
 
@@ -258,67 +132,7 @@ export default function Referee() {
 
 
 
-    return playedMoveIsValid;
-
-  }
-
-
-
-  function isEnPassantMove(
-
-    initialPosition: Position,
-
-    desiredPosition: Position,
-
-    type: PieceType,
-
-    team: TeamType
-
-  ) {
-
-    const pawnDirection = team === TeamType.OUR ? 1 : -1;
-
-
-
-    if (type === PieceType.PAWN) {
-
-      if (
-
-        (desiredPosition.x - initialPosition.x === -1 ||
-
-          desiredPosition.x - initialPosition.x === 1) &&
-
-        desiredPosition.y - initialPosition.y === pawnDirection
-
-      ) {
-
-        const piece = board.pieces.find(
-
-          (p) =>
-
-            p.position.x === desiredPosition.x &&
-
-            p.position.y === desiredPosition.y - pawnDirection &&
-
-            p.isPawn &&
-
-            (p as Pawn).enPassant
-
-        );
-
-        if (piece) {
-
-          return true;
-
-        }
-
-      }
-
-    }
-
-
-
-    return false;
+    return true;
 
   }
 
@@ -495,4 +309,3 @@ export default function Referee() {
   );
 
 }
-

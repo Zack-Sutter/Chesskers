@@ -1,0 +1,57 @@
+{
+  "name": "checkers_hop_chain_keeps_turn",
+  "board": {
+    "schemaVersion": 1,
+    "totalTurns": 2,
+    "pieces": [
+      {
+        "x": 4,
+        "y": 6,
+        "type": "checkers",
+        "team": "b",
+        "hasMoved": false
+      },
+      {
+        "x": 3,
+        "y": 5,
+        "type": "pawn",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "type": "pawn",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 7,
+        "y": 7,
+        "type": "king",
+        "team": "w",
+        "hasMoved": false
+      }
+    ]
+  },
+  "expect": {
+    "applyOk": true,
+    "totalTurns": 2,
+    "checkersHopPosition": {
+      "x": 2,
+      "y": 4
+    }
+  },
+  "action": {
+    "move": {
+      "from": {
+        "x": 4,
+        "y": 6
+      },
+      "to": {
+        "x": 2,
+        "y": 4
+      }
+    }
+  }
+}

@@ -29,3 +29,17 @@ export interface SerializedBoard {
     checkersHopPosition?: { x: number; y: number };
     winningTeam?: TeamType;
 }
+
+export type PromotionChoice = "queen" | "rook" | "bishop" | "knight";
+
+export interface Move {
+    from: { x: number; y: number };
+    to: { x: number; y: number };
+    promotion?: PromotionChoice;
+}
+
+export interface PendingPromotion {
+    x: number;
+    y: number;
+    team: TeamType;
+}

@@ -1,16 +1,15 @@
 import { describe, expect, it } from "vitest";
+import { initialBoard } from "./boardConstants";
+import { Board } from "./models/Board";
+import { Piece } from "./models/Piece";
+import { Position } from "./models/Position";
 import {
-  Board,
-  Piece,
-  Position,
-  PieceType,
-  TeamType,
-  initialBoard,
   getKingStepMoves,
   getPossibleCheckersMoves,
   getSingleJumpMoves,
   isCheckersJump,
-} from "game-engine";
+} from "./rules";
+import { PieceType, TeamType } from "./Types";
 
 describe("Board", () => {
   it("allows a single checkers hop and removes the jumped piece", () => {

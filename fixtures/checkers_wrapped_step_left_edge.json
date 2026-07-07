@@ -1,0 +1,39 @@
+{
+  "name": "checkers_wrapped_step_left_edge",
+  "board": {
+    "schemaVersion": 1,
+    "totalTurns": 2,
+    "pieces": [
+      {
+        "x": 0,
+        "y": 3,
+        "type": "checkers",
+        "team": "b",
+        "hasMoved": false
+      },
+      {
+        "x": 7,
+        "y": 7,
+        "type": "king",
+        "team": "w",
+        "hasMoved": false
+      }
+    ]
+  },
+  "expect": {
+    "legalMovesFrom": [
+      {
+        "from": {
+          "x": 0,
+          "y": 3
+        },
+        "include": [
+          {
+            "x": 7,
+            "y": 3
+          }
+        ]
+      }
+    ]
+  }
+}

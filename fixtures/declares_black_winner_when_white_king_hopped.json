@@ -1,0 +1,40 @@
+{
+  "name": "declares_black_winner_when_white_king_hopped",
+  "board": {
+    "schemaVersion": 1,
+    "totalTurns": 2,
+    "pieces": [
+      {
+        "x": 4,
+        "y": 6,
+        "type": "checkers",
+        "team": "b",
+        "hasMoved": false
+      },
+      {
+        "x": 3,
+        "y": 5,
+        "type": "king",
+        "team": "w",
+        "hasMoved": false
+      }
+    ]
+  },
+  "expect": {
+    "winningTeam": "b",
+    "pieceCount": 1,
+    "noPieceType": "king"
+  },
+  "action": {
+    "move": {
+      "from": {
+        "x": 4,
+        "y": 6
+      },
+      "to": {
+        "x": 2,
+        "y": 4
+      }
+    }
+  }
+}

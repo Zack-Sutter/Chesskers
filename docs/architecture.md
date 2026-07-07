@@ -102,7 +102,7 @@ Source: `[src/referee/rules/CheckersRules.ts](../src/referee/rules/CheckersRules
 - **Multi-hop:** mandatory continuation within the same turn when additional jumps exist (enforced via `checkersHopPosition`).
 - **Torus wrapping:** only checkers use `wrapCoord()` from `[src/models/Position.ts](../src/models/Position.ts)`. Steps and jumps wrap at board edges.
 
-Wrapped-edge behavior is tested in `[src/Board.test.ts](../src/Board.test.ts)`:
+Wrapped-edge behavior is tested in `[packages/game-engine/src/Board.test.ts](../packages/game-engine/src/Board.test.ts)`:
 
 - Wrapped step across left edge: `(0,3) → (7,3)`
 - Wrapped orthogonal hop: checkers at `(0,3)` jumps pawn at `(7,3)` to `(6,3)`
@@ -237,7 +237,7 @@ React-Chess/
 | `[src/Constants.ts](../src/Constants.ts)`                                                                                       | `initialBoard`, board dimensions, UI axes |
 | `[src/components/Referee/Referee.tsx](../src/components/Referee/Referee.tsx)`                                                   | UI orchestration (to be thinned)          |
 | `[src/components/Chessboard/Chessboard.tsx](../src/components/Chessboard/Chessboard.tsx)`                                       | Board rendering and drag input            |
-| `[src/Board.test.ts](../src/Board.test.ts)`                                                                                     | Rules regression tests                    |
+| `[packages/game-engine/src/Board.test.ts](../packages/game-engine/src/Board.test.ts)`                                           | Rules regression tests                    |
 
 ---
 
@@ -430,17 +430,17 @@ Each milestone is **independently assignable**. Before starting:
   - **Touch:** game-engine `serializeBoard` / `deserializeBoard`
   - **Done when:** round-trip test passes; output matches [§5.1](#51-serializedboard-schemaversion-1)
 
-- [ ] **M0-5** — Extract `applyMove()`
+- [x] **M0-5** — Extract `applyMove()`
   - **Prerequisites:** M0-2
   - **Touch:** game-engine + `[Referee.tsx](../src/components/Referee/Referee.tsx)`
-  - **Done when:** turn, hop, en passant, promotion-pending logic in game-engine; Referee delegates; `[Board.test.ts](../src/Board.test.ts)` passes
+  - **Done when:** turn, hop, en passant, promotion-pending logic in game-engine; Referee delegates; `[Board.test.ts](../packages/game-engine/src/Board.test.ts)` passes
 
-- [ ] **M0-6** — Move tests to game-engine
+- [x] **M0-6** — Move tests to game-engine
   - **Prerequisites:** M0-5
-  - **Touch:** move `[src/Board.test.ts](../src/Board.test.ts)` → game-engine; wire root `npm test`
+  - **Touch:** move `[Board.test.ts](../packages/game-engine/src/Board.test.ts)` → game-engine; wire root `npm test`
   - **Done when:** CI / root test script green
 
-- [ ] **M0-7** — Export golden fixtures
+- [x] **M0-7** — Export golden fixtures
   - **Prerequisites:** M0-6
   - **Touch:** `fixtures/*.json`, export script in game-engine
   - **Done when:** one JSON file per significant test case; format documented in [§8](#8-fixture-format)

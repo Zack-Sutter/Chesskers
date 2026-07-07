@@ -1,0 +1,54 @@
+{
+  "name": "checkers_orthogonal_hop_removes_pawn",
+  "board": {
+    "schemaVersion": 1,
+    "totalTurns": 2,
+    "pieces": [
+      {
+        "x": 3,
+        "y": 4,
+        "type": "checkers",
+        "team": "b",
+        "hasMoved": false
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "type": "pawn",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 7,
+        "y": 7,
+        "type": "king",
+        "team": "w",
+        "hasMoved": false
+      }
+    ]
+  },
+  "expect": {
+    "applyOk": true,
+    "pieceCount": 2,
+    "noPieceType": "pawn",
+    "pieceAt": [
+      {
+        "x": 3,
+        "y": 2,
+        "type": "checkers"
+      }
+    ]
+  },
+  "action": {
+    "move": {
+      "from": {
+        "x": 3,
+        "y": 4
+      },
+      "to": {
+        "x": 3,
+        "y": 2
+      }
+    }
+  }
+}

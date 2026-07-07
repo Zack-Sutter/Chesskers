@@ -1,0 +1,70 @@
+{
+  "name": "checkers_hop_continuation_jump_only",
+  "board": {
+    "schemaVersion": 1,
+    "totalTurns": 2,
+    "checkersHopPosition": {
+      "x": 2,
+      "y": 4
+    },
+    "pieces": [
+      {
+        "x": 2,
+        "y": 4,
+        "type": "checkers",
+        "team": "b",
+        "hasMoved": true
+      },
+      {
+        "x": 0,
+        "y": 6,
+        "type": "checkers",
+        "team": "b",
+        "hasMoved": false
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "type": "pawn",
+        "team": "w",
+        "hasMoved": false
+      },
+      {
+        "x": 7,
+        "y": 7,
+        "type": "king",
+        "team": "w",
+        "hasMoved": false
+      }
+    ]
+  },
+  "expect": {
+    "legalMovesFrom": [
+      {
+        "from": {
+          "x": 0,
+          "y": 6
+        },
+        "exact": []
+      },
+      {
+        "from": {
+          "x": 2,
+          "y": 4
+        },
+        "include": [
+          {
+            "x": 4,
+            "y": 2
+          }
+        ],
+        "exclude": [
+          {
+            "x": 3,
+            "y": 5
+          }
+        ]
+      }
+    ]
+  }
+}

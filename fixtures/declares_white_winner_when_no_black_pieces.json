@@ -1,0 +1,19 @@
+{
+  "name": "declares_white_winner_when_no_black_pieces",
+  "board": {
+    "schemaVersion": 1,
+    "totalTurns": 1,
+    "pieces": [
+      {
+        "x": 4,
+        "y": 0,
+        "type": "king",
+        "team": "w",
+        "hasMoved": false
+      }
+    ]
+  },
+  "expect": {
+    "winningTeam": "w"
+  }
+}
