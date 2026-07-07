@@ -5,15 +5,18 @@ import {
   applyPromotion,
   serializeBoard,
   TeamType,
+  type Board,
   type Move,
   type PromotionChoice,
 } from "game-engine";
-import type { GameRoom } from "./routes.js";
+import type { EngineConfig, GameRoom } from "./routes.js";
+import { runBestMove } from "./engine.js";
 
 type ClientMessage =
   | { type: "join"; gameId: string; playerToken?: string }
   | { type: "move"; from: { x: number; y: number }; to: { x: number; y: number } }
-  | { type: "promote"; pieceType: PromotionChoice };
+  | { type: "promote"; pieceType: PromotionChoice }
+  | { type: "requestEngineMove" };
 
 export type ServerMessage = Record<string, unknown>;
 
@@ -34,6 +37,35 @@ function broadcast(room: GameRoom, message: ServerMessage) {
   for (const ws of [room.whiteSocket, room.blackSocket]) {
     if (ws) send(ws, message);
   }
+}
+
+function broadcastState(room: GameRoom): ServerMessage[] {
+  const out: ServerMessage[] = [];
+  const state = { type: "state", board: serializeBoard(room.board) };
+  out.push(state);
+  broadcast(room, state);
+  if (room.board.winningTeam !== undefined) {
+    const over = { type: "gameOver", winner: room.board.winningTeam };
+    out.push(over);
+    broadcast(room, over);
+  }
+  return out;
+}
+
+function isEngineTurn(room: GameRoom): boolean {
+  if (!room.engine) return false;
+  const b = room.board;
+  if (b.winningTeam !== undefined) return false;
+  if (b.checkersHopPosition) {
+    const piece = b.pieces.find(
+      (p) =>
+        p.position.x === b.checkersHopPosition!.x &&
+        p.position.y === b.checkersHopPosition!.y
+    );
+    return piece?.team === room.engine.color;
+  }
+  const toMove = b.totalTurns % 2 === 1 ? TeamType.OUR : TeamType.OPPONENT;
+  return toMove === room.engine.color;
 }
 
 function seatColor(room: GameRoom, ws: WebSocket): TeamType | undefined {
@@ -153,12 +185,7 @@ export function handleMove(
     return out;
   }
 
-  emitAll({ type: "state", board: serializeBoard(room.board) });
-
-  if (room.board.winningTeam !== undefined) {
-    emitAll({ type: "gameOver", winner: room.board.winningTeam });
-  }
-  return out;
+  return [...out, ...broadcastState(room)];
 }
 
 export function handlePromote(
@@ -193,12 +220,60 @@ export function handlePromote(
   room.board = applyPromotion(room.board, room.pendingPromotion, pieceType);
   room.pendingPromotion = undefined;
 
-  emitAll({ type: "state", board: serializeBoard(room.board) });
+  return [...out, ...broadcastState(room)];
+}
 
-  if (room.board.winningTeam !== undefined) {
-    emitAll({ type: "gameOver", winner: room.board.winningTeam });
+export async function handleEngineMove(
+  room: GameRoom,
+  getMove: (board: Board, engine: EngineConfig) => Promise<Move> = runBestMove
+): Promise<ServerMessage[]> {
+  if (!room.engine) {
+    const err = { type: "error", message: "Engine not enabled for this game" };
+    broadcast(room, err);
+    return [err];
   }
-  return out;
+  if (!isEngineTurn(room)) {
+    const err = { type: "error", message: "Not the engine's turn" };
+    broadcast(room, err);
+    return [err];
+  }
+
+  const thinking = { type: "engineThinking" };
+  broadcast(room, thinking);
+  const out: ServerMessage[] = [thinking];
+
+  // ponytail: loop so a checkers multi-hop resolves within one engine turn.
+  // Cap iterations to avoid an infinite loop if the engine misbehaves.
+  for (let i = 0; i < 32; i++) {
+    let move: Move;
+    try {
+      move = await getMove(room.board, room.engine);
+    } catch (e) {
+      const err = {
+        type: "error",
+        message: `Engine failed: ${(e as Error).message}`,
+      };
+      broadcast(room, err);
+      return [...out, err];
+    }
+
+    const result = applyMove(room.board, move);
+    if (!result.ok) {
+      const err = { type: "error", message: "Engine produced an illegal move" };
+      broadcast(room, err);
+      return [...out, err];
+    }
+    room.board = result.board;
+
+    if (result.pendingPromotion) {
+      room.board = applyPromotion(room.board, result.pendingPromotion, "queen");
+    }
+
+    if (room.board.winningTeam !== undefined) break;
+    if (!isEngineTurn(room)) break;
+  }
+
+  return [...out, ...broadcastState(room)];
 }
 
 export function handleClientMessage(
@@ -234,6 +309,10 @@ export function handleClientMessage(
   }
   if (msg.type === "promote") {
     return handlePromote(ws, room, msg.pieceType);
+  }
+  if (msg.type === "requestEngineMove") {
+    void handleEngineMove(room);
+    return [];
   }
 
   const err = { type: "error", message: "Unknown message type" };
