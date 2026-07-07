@@ -1,0 +1,16 @@
+#app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1rem;
+    box-sizing: border-box;
+    overflow: hidden;
+    background-color: #202020;
+}
+
+.board-viewport {
+    width: min(96vw, calc(100vh - 4rem), 1600px);
+    aspect-ratio: 1;
+}

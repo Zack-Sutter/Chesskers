@@ -1,0 +1,89 @@
+#board-wrapper {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  grid-template-rows: repeat(16, 1fr);
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+#play-area-border {
+  position: absolute;
+  top: 25%;
+  left: 25%;
+  width: 50%;
+  height: 50%;
+  border: 4px solid #000;
+  pointer-events: none;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+#board-wrapper .drag-ghost {
+  position: absolute;
+  background-repeat: no-repeat;
+  background-position: center;
+  z-index: 100;
+  pointer-events: none;
+  cursor: grabbing;
+}
+
+.modal {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  bottom: 0px;
+  left: 0px;
+  z-index: 200;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal > .modal-body {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: 300px;
+  width: min(800px, 90vw);
+  background-color: rgba(127, 127, 127, 0.8);
+}
+
+.modal > .modal-body > img {
+  height: 120px;
+  padding: 20px;
+  border-radius: 50%;
+}
+
+.modal > .modal-body > img:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+}
+
+.modal > .modal-body > .checkmate-body {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.modal > .modal-body > .checkmate-body > span {
+  font-size: clamp(20px, 4vw, 32px);
+}
+
+.modal > .modal-body > .checkmate-body > button {
+  background-color: #779556;
+  border: none;
+  border-radius: 8px;
+  padding: 24px 48px;
+  font-size: clamp(20px, 4vw, 32px);
+  color: white;
+}
+
+.modal > .modal-body > .checkmate-body > button:hover {
+  cursor: pointer;
+}
