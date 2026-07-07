@@ -37,7 +37,7 @@ training/
   chesskers/            # rules mirror + encoder (T1-2, T1-3)
   configs/
     encoder_v1.yaml     # tensor layout spec (T1-3)
-  self_play.py          # shard writer (T1-4)
+  self_play.py          # random self-play shard writer (T1-4)
   train.py              # value/policy training + ONNX export (T1-5, T1-6)
   promote.py            # iterative promotion loop (T1-7)
   shards/               # generated NPZ training data
@@ -55,11 +55,27 @@ python -m pytest        # runs fixture-parity tests in tests/
 Python rules mirror (`chesskers/rules.py`) and asserts legal moves, terminal
 states, and apply-move results match the TypeScript/Rust engines.
 
+## Self-play (T1-4)
+
+Generate value-only training data from random-vs-random games:
+
+```bash
+cd training
+python self_play.py --positions 1000 --out shards/ --seed 42
+```
+
+Each non-terminal position is encoded with `encoder_v1` and labeled with the
+eventual game outcome from that position's side-to-move perspective (`+1` win,
+`-1` loss, `0` draw/move-limit — architecture §5.4). Shards are NPZ files with
+`states` (`float32 [N, 16, 8, 8]`) and `outcomes` (`float32 [N]`). Policy
+targets arrive with the policy head at T1-6.
+
 ## Milestone status
 
-**T1-1** (scaffold), **T1-2** (rules mirror), and **T1-3** (board encoder) are
-complete. The encoder (`chesskers/encoder.py`, spec `configs/encoder_v1.yaml`)
-produces byte-identical tensors to the Rust encoder on every fixture, verified
-via FNV-1a golden hashes in `tests/test_encoder.py`. Subsequent milestones
-(T1-4 self-play, T1-5 value model, T1-6 policy+MCTS, T1-7 iterative loop) are
-tracked in [docs/architecture.md](../docs/architecture.md) §7.
+**T1-1** (scaffold), **T1-2** (rules mirror), **T1-3** (board encoder), and
+**T1-4** (self-play shard writer) are complete. The encoder
+(`chesskers/encoder.py`, spec `configs/encoder_v1.yaml`) produces byte-identical
+tensors to the Rust encoder on every fixture, verified via FNV-1a golden hashes
+in `tests/test_encoder.py`. Remaining milestones (T1-5 value model, T1-6
+policy+MCTS, T1-7 iterative loop) are tracked in
+[docs/architecture.md](../docs/architecture.md) §7.

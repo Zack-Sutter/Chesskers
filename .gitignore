@@ -17,6 +17,13 @@
 # rust
 /engine/target
 
+# python / training
+__pycache__/
+*.pyc
+/training/.venv
+/training/shards
+/training/models
+
 # misc
 .DS_Store
 .env.local

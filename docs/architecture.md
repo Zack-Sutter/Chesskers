@@ -559,7 +559,7 @@ Follow checklist in [railway-vercel-migration.md §12](./railway-vercel-migratio
   - **Touch:** `training/chesskers/encoder.py`, `training/configs/encoder_v1.yaml`
   - **Done when:** encoder output matches E2-1 Rust encoder on fixtures
 
-- [ ] **T1-4** — Self-play shard writer
+- [x] **T1-4** — Self-play shard writer
   - **Prerequisites:** T1-2
   - **Touch:** `training/self_play.py`
   - **Done when:** generates 1000+ positions to `training/shards/` as NPZ (states, outcomes; policy targets optional until T1-6)
