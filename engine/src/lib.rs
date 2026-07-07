@@ -5,4 +5,5 @@ pub mod cli;
 pub mod encoder;
 pub mod evaluator;
 pub mod rules;
+pub mod search;
 pub mod state;

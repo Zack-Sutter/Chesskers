@@ -52,7 +52,7 @@ pub fn possible_bishop_moves(bishop: &Piece, pieces: &[Piece]) -> Vec<Coord> {
         bishop,
         pieces,
         &[(1, 1), (1, -1), (-1, -1), (-1, 1)],
-        false,
+        true,
     )
 }
 
@@ -70,7 +70,7 @@ pub fn possible_queen_moves(queen: &Piece, pieces: &[Piece]) -> Vec<Coord> {
             (-1, -1),
             (-1, 1),
         ],
-        false,
+        true,
     )
 }
 
@@ -123,14 +123,22 @@ pub fn possible_knight_moves(knight: &Piece, pieces: &[Piece]) -> Vec<Coord> {
 
     for i in [-1, 1] {
         for j in [-1, 1] {
-            let vertical = coord(px + j, py + i * 2);
-            let horizontal = coord(px + i * 2, py + j);
+            let vx = px + j;
+            let vy = py + i * 2;
+            let hx = px + i * 2;
+            let hy = py + j;
 
-            if tile_is_empty_or_occupied_by_opponent(vertical, pieces, knight.team) {
-                moves.push(vertical);
+            if in_bounds(vx, vy) {
+                let vertical = coord(vx, vy);
+                if tile_is_empty_or_occupied_by_opponent(vertical, pieces, knight.team) {
+                    moves.push(vertical);
+                }
             }
-            if tile_is_empty_or_occupied_by_opponent(horizontal, pieces, knight.team) {
-                moves.push(horizontal);
+            if in_bounds(hx, hy) {
+                let horizontal = coord(hx, hy);
+                if tile_is_empty_or_occupied_by_opponent(horizontal, pieces, knight.team) {
+                    moves.push(horizontal);
+                }
             }
         }
     }

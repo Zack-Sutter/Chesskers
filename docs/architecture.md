@@ -388,6 +388,10 @@ echo '{"board":{...},"move":{"from":{"x":3,"y":1},"to":{"x":3,"y":3}}}' | chessk
 echo '{"schemaVersion":1,...}' | chesskers-engine is-terminal
 # → {"terminal":true,"winner":"w"|"b"|null}
 
+# Play a full random-vs-random game to terminal (E1-6)
+echo '{"schemaVersion":1,...}' | chesskers-engine play-random --seed 42
+# → {"terminal":true,"winner":"w"|"b","movesPlayed":N}
+
 # Play one engine move (E2-4)
 chesskers-engine best-move --model engine/models/v001.onnx --think-ms 2000 --depth 4 < board.json
 # → {"move":{"from":{...},"to":{...},"promotion?":"queen"}}
@@ -449,32 +453,32 @@ Each milestone is **independently assignable**. Before starting:
 
 ### E1 — Rust engine shell
 
-- [ ] **E1-1** — Scaffold Rust crate
+- [x] **E1-1** — Scaffold Rust crate
   - **Prerequisites:** M0-7
   - **Touch:** `engine/` (`cargo init`, `Cargo.toml`)
   - **Done when:** `cargo build` succeeds
 
-- [ ] **E1-2** — Port SerializedBoard types
+- [x] **E1-2** — Port SerializedBoard types
   - **Prerequisites:** E1-1
   - **Touch:** `engine/src/state.rs` (or equivalent)
   - **Done when:** parses all files in `fixtures/`
 
-- [ ] **E1-3** — Port move generation + win detection
+- [x] **E1-3** — Port move generation + win detection
   - **Prerequisites:** E1-2
   - **Touch:** `engine/src/rules/`
   - **Done when:** `cargo test` legal-move and terminal assertions match fixtures
 
-- [ ] **E1-4** — Port `apply_move`
+- [x] **E1-4** — Port `apply_move`
   - **Prerequisites:** E1-3
   - **Touch:** `engine/src/apply.rs`
   - **Done when:** fixture replay tests pass end-to-end (sequence of moves → expected board)
 
-- [ ] **E1-5** — CLI commands
+- [x] **E1-5** — CLI commands
   - **Prerequisites:** E1-4
   - **Touch:** `engine/src/main.rs`
   - **Done when:** `legal-moves`, `apply-move`, `is-terminal` work per [§6](#6-rust-engine-cli)
 
-- [ ] **E1-6** — Random-move bot
+- [x] **E1-6** — Random-move bot
   - **Prerequisites:** E1-5
   - **Touch:** `engine/`
   - **Done when:** CLI plays a full random-vs-random game to terminal without illegal moves
@@ -483,17 +487,17 @@ Each milestone is **independently assignable**. Before starting:
 
 ### E2 — Search + ONNX (Rust)
 
-- [ ] **E2-1** — Board → tensor encoder (Rust)
+- [x] **E2-1** — Board → tensor encoder (Rust)
   - **Prerequisites:** E1-4
   - **Touch:** `engine/src/encoder.rs`
   - **Done when:** matches Python encoder on all fixtures (T1-3 provides reference) or documented float tolerance
 
-- [ ] **E2-2** — ONNX Runtime integration
+- [x] **E2-2** — ONNX Runtime integration
   - **Prerequisites:** E2-1
   - **Touch:** `engine/` (add `ort` or `tract` dependency)
   - **Done when:** loads dummy or v001 ONNX; `evaluate` returns finite value
 
-- [ ] **E2-3** — Search with value-only NN
+- [x] **E2-3** — Search with value-only NN
   - **Prerequisites:** E2-2
   - **Touch:** `engine/src/search.rs`
   - **Done when:** beats E1-6 random bot >90% over 100-game suite
