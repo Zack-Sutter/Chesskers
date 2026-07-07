@@ -425,7 +425,7 @@ Each milestone is **independently assignable**. Before starting:
   - **Touch:** `[src/Constants.ts](../src/Constants.ts)` → game-engine board constants + `src/constants/ui.ts` for `VERTICAL_AXIS`, `HORIZONTAL_AXIS`
   - **Done when:** `initialBoard` lives in game-engine; UI axes in `src/`
 
-- [ ] **M0-4** — Board serialization
+- [x] **M0-4** — Board serialization
   - **Prerequisites:** M0-2
   - **Touch:** game-engine `serializeBoard` / `deserializeBoard`
   - **Done when:** round-trip test passes; output matches [§5.1](#51-serializedboard-schemaversion-1)
