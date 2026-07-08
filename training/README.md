@@ -70,12 +70,36 @@ eventual game outcome from that position's side-to-move perspective (`+1` win,
 `states` (`float32 [N, 16, 8, 8]`) and `outcomes` (`float32 [N]`). Policy
 targets arrive with the policy head at T1-6.
 
+## Value model (T1-5)
+
+Train a small CNN value head on the self-play shards and export it to ONNX:
+
+```bash
+cd training
+python self_play.py --positions 20000 --out shards/ --seed 42   # if shards/ is empty
+python train.py --shards shards/ --out models/v001.onnx --epochs 30
+cp models/v001.onnx ../engine/models/v001.onnx                    # engine consumes it here
+```
+
+The exported graph takes one input `board [1, 16, 8, 8]` (encoder_v1) and returns
+a scalar `value` in `[-1, 1]` (tanh) from the side-to-move perspective — the
+contract the Rust `OnnxEvaluator` expects. Verify in the engine:
+
+```bash
+cd engine
+cargo test --release v001_onnx_loads_and_evaluates            # loads in tract (E2-2)
+cargo test --release search_vs_random_win_rate -- --ignored --nocapture   # 100-game suite
+```
+
+The value-only engine scored **100/100 vs random** at depth 2 (arch §9 Stage A
+exit target of >90% met).
+
 ## Milestone status
 
-**T1-1** (scaffold), **T1-2** (rules mirror), **T1-3** (board encoder), and
-**T1-4** (self-play shard writer) are complete. The encoder
-(`chesskers/encoder.py`, spec `configs/encoder_v1.yaml`) produces byte-identical
-tensors to the Rust encoder on every fixture, verified via FNV-1a golden hashes
-in `tests/test_encoder.py`. Remaining milestones (T1-5 value model, T1-6
-policy+MCTS, T1-7 iterative loop) are tracked in
+**T1-1** (scaffold), **T1-2** (rules mirror), **T1-3** (board encoder),
+**T1-4** (self-play shard writer), and **T1-5** (value-only CNN + ONNX export)
+are complete. The encoder (`chesskers/encoder.py`, spec
+`configs/encoder_v1.yaml`) produces byte-identical tensors to the Rust encoder on
+every fixture, verified via FNV-1a golden hashes in `tests/test_encoder.py`.
+Remaining milestones (T1-6 policy+MCTS, T1-7 iterative loop) are tracked in
 [docs/architecture.md](../docs/architecture.md) §7.

@@ -564,10 +564,11 @@ Follow checklist in [railway-vercel-migration.md §12](./railway-vercel-migratio
   - **Touch:** `training/self_play.py`
   - **Done when:** generates 1000+ positions to `training/shards/` as NPZ (states, outcomes; policy targets optional until T1-6)
 
-- [ ] **T1-5** — Value-only CNN + ONNX export
+- [x] **T1-5** — Value-only CNN + ONNX export
   - **Prerequisites:** T1-3, T1-4
   - **Touch:** `training/train.py`, `training/models/v001.onnx`
   - **Done when:** ONNX loads in Rust E2-2; measurable improvement over random in 100-game suite
+  - **Result:** `v001.onnx` loads via tract (`v001_onnx_loads_and_evaluates`); `search_vs_random_win_rate` scored 100/0/0 vs random (arch §9 Stage A exit met). Copy the trained model to `engine/models/v001.onnx` for the engine to consume.
 
 - [ ] **T1-6** — Policy + value head + MCTS self-play
   - **Prerequisites:** T1-5, E2-3
