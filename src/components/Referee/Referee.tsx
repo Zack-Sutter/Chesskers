@@ -42,6 +42,25 @@ interface PromotionTarget {
   team: TeamType;
 }
 
+interface GameSnapshot {
+  board: Board;
+  promotion: PromotionTarget | null;
+}
+
+interface LocalGame extends GameSnapshot {
+  past: GameSnapshot[];
+  future: GameSnapshot[];
+}
+
+function initialLocalGame(): LocalGame {
+  return {
+    board: initialBoard.clone(),
+    promotion: null,
+    past: [],
+    future: [],
+  };
+}
+
 interface Props {
   room?: GameRoom;
   onExit?: () => void;
@@ -50,23 +69,20 @@ interface Props {
 export default function Referee({ room, onExit }: Props) {
   const online = room != null;
 
-  const [localBoard, setLocalBoard] = useState<Board>(initialBoard.clone());
-  const [localPromotion, setLocalPromotion] = useState<PromotionTarget | null>(
-    null
-  );
+  const [local, setLocal] = useState<LocalGame>(initialLocalGame);
   const soundStateRef = useRef<{
     count: number;
     turns: number;
     winner?: TeamType;
   } | null>(null);
 
-  const board = online ? room!.board : localBoard;
+  const board = online ? room!.board : local.board;
 
   const promotion: PromotionTarget | null = online
     ? room!.pendingPromotion && room!.myColor
       ? { ...room!.pendingPromotion, team: room!.myColor }
       : null
-    : localPromotion;
+    : local.promotion;
 
   const gameOver = board?.winningTeam !== undefined;
 
@@ -92,41 +108,64 @@ export default function Referee({ room, onExit }: Props) {
       return room!.sendMove(playedPiece.position, destination);
     }
 
-    const result = applyMove(localBoard, {
-      from: { x: playedPiece.position.x, y: playedPiece.position.y },
-      to: { x: destination.x, y: destination.y },
+    let played = false;
+    let isCapture = false;
+    let isGameOver = false;
+
+    setLocal((previous) => {
+      const result = applyMove(previous.board, {
+        from: { x: playedPiece.position.x, y: playedPiece.position.y },
+        to: { x: destination.x, y: destination.y },
+      });
+
+      if (!result.ok) {
+        return previous;
+      }
+
+      played = true;
+      isCapture = result.isCapture ?? false;
+      isGameOver = result.board.winningTeam !== undefined;
+
+      let nextPromotion: PromotionTarget | null = null;
+      if (result.pendingPromotion) {
+        const pawn = result.board.pieces.find(
+          (p) =>
+            p.isPawn &&
+            p.position.x === result.pendingPromotion!.x &&
+            p.position.y === result.pendingPromotion!.y
+        );
+        if (pawn) {
+          nextPromotion = {
+            x: pawn.position.x,
+            y: pawn.position.y,
+            team: pawn.team,
+          };
+        }
+      }
+
+      return {
+        board: result.board,
+        promotion: nextPromotion,
+        past: [
+          ...previous.past,
+          { board: previous.board.clone(), promotion: previous.promotion },
+        ],
+        future: [],
+      };
     });
 
-    if (!result.ok) {
+    if (!played) {
       return false;
     }
 
-    setLocalBoard(result.board);
-
-    if (result.isCapture) {
+    if (isCapture) {
       captureSound.play();
     } else {
       moveSound.play();
     }
 
-    if (result.board.winningTeam !== undefined) {
+    if (isGameOver) {
       checkmateSound.play();
-    }
-
-    if (result.pendingPromotion) {
-      const pawn = result.board.pieces.find(
-        (p) =>
-          p.isPawn &&
-          p.position.x === result.pendingPromotion!.x &&
-          p.position.y === result.pendingPromotion!.y
-      );
-      if (pawn) {
-        setLocalPromotion({
-          x: pawn.position.x,
-          y: pawn.position.y,
-          team: pawn.team,
-        });
-      }
     }
 
     return true;
@@ -141,17 +180,66 @@ export default function Referee({ room, onExit }: Props) {
       return;
     }
 
-    setLocalBoard((previousBoard) => {
-      const clonedBoard = previousBoard.clone();
+    setLocal((previous) => {
+      if (!previous.promotion) return previous;
+
+      const clonedBoard = previous.board.clone();
       clonedBoard.pieces = clonedBoard.pieces.map((piece) =>
-        piece.position.x === promotion.x && piece.position.y === promotion.y
+        piece.position.x === previous.promotion!.x &&
+        piece.position.y === previous.promotion!.y
           ? new Piece(piece.position.clone(), pieceType, piece.team, true)
           : piece
       );
       clonedBoard.calculateAllMoves();
-      return clonedBoard;
+
+      return {
+        board: clonedBoard,
+        promotion: null,
+        past: [
+          ...previous.past,
+          { board: previous.board.clone(), promotion: previous.promotion },
+        ],
+        future: [],
+      };
     });
-    setLocalPromotion(null);
+  }
+
+  function undoMove() {
+    if (online) return;
+
+    setLocal((previous) => {
+      if (previous.past.length === 0) return previous;
+
+      const snapshot = previous.past[previous.past.length - 1];
+      return {
+        board: snapshot.board.clone(),
+        promotion: snapshot.promotion ? { ...snapshot.promotion } : null,
+        past: previous.past.slice(0, -1),
+        future: [
+          { board: previous.board.clone(), promotion: previous.promotion },
+          ...previous.future,
+        ],
+      };
+    });
+  }
+
+  function redoMove() {
+    if (online) return;
+
+    setLocal((previous) => {
+      if (previous.future.length === 0) return previous;
+
+      const snapshot = previous.future[0];
+      return {
+        board: snapshot.board.clone(),
+        promotion: snapshot.promotion ? { ...snapshot.promotion } : null,
+        past: [
+          ...previous.past,
+          { board: previous.board.clone(), promotion: previous.promotion },
+        ],
+        future: previous.future.slice(1),
+      };
+    });
   }
 
   function promotionTeamType() {
@@ -163,8 +251,7 @@ export default function Referee({ room, onExit }: Props) {
       onExit?.();
       return;
     }
-    setLocalBoard(initialBoard.clone());
-    setLocalPromotion(null);
+    setLocal(initialLocalGame());
   }
 
   function gameOverMessage(): string {
@@ -190,6 +277,24 @@ export default function Referee({ room, onExit }: Props) {
           <button className="exit-button" onClick={onExit}>
             ← Lobby
           </button>
+        )}
+        {!online && (
+          <>
+            <button
+              className="history-button"
+              disabled={local.past.length === 0}
+              onClick={undoMove}
+            >
+              Undo
+            </button>
+            <button
+              className="history-button"
+              disabled={local.future.length === 0}
+              onClick={redoMove}
+            >
+              Redo
+            </button>
+          </>
         )}
         <span style={{ color: "white", fontSize: "14px" }}>{statusText()}</span>
       </div>

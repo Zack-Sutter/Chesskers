@@ -1,3 +1,3 @@
-- undo button
-- redo button
+- [x] undo button
+- [x] redo button
 - introduction

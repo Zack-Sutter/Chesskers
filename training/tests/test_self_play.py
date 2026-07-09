@@ -1,8 +1,9 @@
-"""Self-play shard writer checks (T1-4).
+"""MCTS self-play shard writer checks (T1-6).
 
 Verifies the invariants the trainer relies on: outcomes are side-to-move value
-targets in {-1, 0, +1}, states have the encoder_v1 shape, generation is
-seed-deterministic, and shards round-trip through NPZ.
+targets in {-1, 0, +1}, states have the encoder_v1 shape, policy targets are
+valid sparse visit distributions, generation is seed-deterministic, and shards
+round-trip through NPZ with all four keys.
 """
 
 from __future__ import annotations
@@ -11,7 +12,15 @@ import random
 
 import numpy as np
 
-from self_play import generate_positions, write_shards, _outcomes
+from chesskers.move_index import POLICY_SIZE
+from self_play import MAX_POLICY_ENTRIES, generate_positions, write_shards, _outcomes
+
+# Small sims keep the MCTS-driven tests fast while still exercising the tree.
+_SIMS = 16
+
+
+def _gen(seed: int, n: int):
+    return generate_positions(random.Random(seed), n, max_moves=120, sims=_SIMS)
 
 
 def test_outcome_labeling_is_side_to_move_pov() -> None:
@@ -22,31 +31,45 @@ def test_outcome_labeling_is_side_to_move_pov() -> None:
 
 
 def test_generate_positions_shape_and_values() -> None:
-    states, outcomes, games = generate_positions(random.Random(1), 200, max_moves=300)
-    assert len(states) >= 200
+    states, outcomes, policy_idx, policy_val, games = _gen(1, 120)
+    assert len(states) >= 120
     assert states.shape[1:] == (16, 8, 8)
     assert states.dtype == np.float32
-    assert len(states) == len(outcomes)
+    assert len(states) == len(outcomes) == len(policy_idx) == len(policy_val)
     assert games >= 1
     assert set(np.unique(outcomes)).issubset({-1.0, 0.0, 1.0})
 
+    assert policy_idx.shape == (len(states), MAX_POLICY_ENTRIES)
+    assert policy_val.shape == (len(states), MAX_POLICY_ENTRIES)
+    # Indices are either padding (-1) or valid policy indices.
+    valid = policy_idx[policy_idx >= 0]
+    assert valid.size > 0
+    assert valid.max() < POLICY_SIZE
+    # Each row's probabilities sum to ~1 (visit distribution) and are non-negative.
+    assert (policy_val >= 0).all()
+    row_sums = policy_val.sum(axis=1)
+    assert np.allclose(row_sums, 1.0, atol=1e-5)
+
 
 def test_generation_is_deterministic() -> None:
-    a, oa, _ = generate_positions(random.Random(7), 100, max_moves=300)
-    b, ob, _ = generate_positions(random.Random(7), 100, max_moves=300)
-    assert np.array_equal(a, b)
-    assert np.array_equal(oa, ob)
+    a = _gen(7, 80)
+    b = _gen(7, 80)
+    for arr_a, arr_b in zip(a[:4], b[:4]):
+        assert np.array_equal(arr_a, arr_b)
 
 
 def test_shard_roundtrip(tmp_path) -> None:
-    states, outcomes, _ = generate_positions(random.Random(3), 150, max_moves=300)
-    paths = write_shards(states, outcomes, tmp_path, shard_size=64)
+    states, outcomes, policy_idx, policy_val, _ = _gen(3, 100)
+    paths = write_shards(states, outcomes, policy_idx, policy_val, tmp_path, shard_size=64)
     assert len(paths) == -(-len(states) // 64)  # ceil-divide positions into shards
 
-    loaded_states, loaded_outcomes = [], []
+    keys = ("states", "outcomes", "policy_idx", "policy_val")
+    loaded = {k: [] for k in keys}
     for path in paths:
         with np.load(path) as npz:
-            loaded_states.append(npz["states"])
-            loaded_outcomes.append(npz["outcomes"])
-    assert np.array_equal(np.concatenate(loaded_states), states)
-    assert np.array_equal(np.concatenate(loaded_outcomes), outcomes)
+            for k in keys:
+                loaded[k].append(npz[k])
+    assert np.array_equal(np.concatenate(loaded["states"]), states)
+    assert np.array_equal(np.concatenate(loaded["outcomes"]), outcomes)
+    assert np.array_equal(np.concatenate(loaded["policy_idx"]), policy_idx)
+    assert np.array_equal(np.concatenate(loaded["policy_val"]), policy_val)

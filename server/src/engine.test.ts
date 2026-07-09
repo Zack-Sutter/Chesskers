@@ -26,7 +26,7 @@ describe("POST /games/:id/engine", () => {
     const res = await app.inject({
       method: "POST",
       url: `/games/${created.gameId}/engine`,
-      payload: { engineColor: "b", model: "engine/models/v001.onnx", thinkMs: 500 },
+      payload: { engineColor: "b", model: "engine/models/v001.onnx", thinkMs: 500, depth: 3 },
     });
 
     expect(res.statusCode).toBe(200);
@@ -34,7 +34,9 @@ describe("POST /games/:id/engine", () => {
       engineColor: "b",
       model: "engine/models/v001.onnx",
       thinkMs: 500,
+      depth: 3,
     });
+    expect(rooms.get(created.gameId)?.engine?.depth).toBe(3);
     expect(rooms.get(created.gameId)?.engine?.color).toBe(TeamType.OPPONENT);
     await app.close();
   });
@@ -76,5 +78,29 @@ describe("handleEngineMove", () => {
     const messages = await handleEngineMove(room, getMove);
     expect(messages).toEqual([{ type: "error", message: "Not the engine's turn" }]);
     expect(room.board.totalTurns).toBe(1);
+  });
+
+  it("ignores a concurrent engine request while busy", async () => {
+    const room = makeRoom({ color: TeamType.OUR, model: "m.onnx", thinkMs: 1 });
+    let release!: (move: Move) => void;
+    const gate = new Promise<Move>((resolve) => {
+      release = resolve;
+    });
+    let getMoveCalls = 0;
+    const getMove = async () => {
+      getMoveCalls += 1;
+      return gate;
+    };
+
+    const first = handleEngineMove(room, getMove);
+    expect(room.engineBusy).toBe(true);
+
+    const second = await handleEngineMove(room, getMove);
+    expect(second).toEqual([]);
+    expect(getMoveCalls).toBe(1);
+
+    release({ from: { x: 0, y: 1 }, to: { x: 0, y: 3 } });
+    await first;
+    expect(room.engineBusy).toBe(false);
   });
 });

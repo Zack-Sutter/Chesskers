@@ -367,6 +367,69 @@ pub fn play_search_vs_random<E: Evaluator>(
     })
 }
 
+/// Play `plies` seeded random moves from `board` to diversify a starting
+/// position (used by the fixed evaluation suites so otherwise-deterministic
+/// engine-vs-engine games differ per seed).
+pub(crate) fn random_opening(mut board: Board, plies: u32, seed: u64) -> Result<Board, String> {
+    let mut rng = Rng::new(seed);
+    board.calculate_all_moves();
+    for _ in 0..plies {
+        if board.winning_team.is_some() || board.all_legal_moves().is_empty() {
+            break;
+        }
+        let mv = pick_random_move(&board, &mut rng);
+        let result = apply_move(&board, &mv);
+        if !result.ok {
+            return Err(format!("illegal opening move: {mv:?}"));
+        }
+        board = result.board;
+    }
+    Ok(board)
+}
+
+/// Play one engine-vs-engine game (both sides use alpha-beta with their own
+/// evaluator). Returns the winner, or `None` for a move-capped/stalemated draw
+/// (no draw rules, §11).
+#[allow(clippy::too_many_arguments)]
+pub fn play_engine_vs_engine<W: Evaluator, B: Evaluator>(
+    start: Board,
+    white_eval: &mut W,
+    white_cfg: &SearchConfig,
+    black_eval: &mut B,
+    black_cfg: &SearchConfig,
+    opening_plies: u32,
+    seed: u64,
+    max_moves: u32,
+) -> Result<Option<Team>, String> {
+    let mut board = random_opening(start, opening_plies, seed)?;
+    let mut moves_played = 0;
+
+    while board.winning_team.is_none() {
+        if moves_played >= max_moves {
+            return Ok(None);
+        }
+        if board.all_legal_moves().is_empty() {
+            return Ok(None);
+        }
+        let mv = if board.current_team() == Team::White {
+            search_best_move(&board, white_eval, white_cfg, None).map_err(|e| e.to_string())?
+        } else {
+            search_best_move(&board, black_eval, black_cfg, None).map_err(|e| e.to_string())?
+        };
+        let result = apply_move(&board, &mv);
+        if !result.ok {
+            return Err(format!("illegal move: {mv:?}"));
+        }
+        if result.pending_promotion.is_some() {
+            return Err("promotion left pending".to_string());
+        }
+        board = result.board;
+        moves_played += 1;
+    }
+
+    Ok(board.winning_team)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

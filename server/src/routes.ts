@@ -25,6 +25,7 @@ export interface GameRoom {
   blackToken?: string;
   pendingPromotion?: PendingPromotion;
   engine?: EngineConfig;
+  engineBusy?: boolean;
   createdAt: number;
 }
 
@@ -32,6 +33,7 @@ export interface GameRoom {
 export const rooms = new Map<string, GameRoom>();
 
 const DEFAULT_THINK_MS = 2000;
+const DEFAULT_DEPTH = 4;
 
 export async function registerRoutes(app: FastifyInstance) {
   app.get("/health", async () => ({ ok: true }));
@@ -46,14 +48,24 @@ export async function registerRoutes(app: FastifyInstance) {
 
   app.post<{
     Params: { id: string };
-    Body: { engineColor?: string; model?: string; thinkMs?: number };
+    Body: { engineColor?: string; model?: string; thinkMs?: number; depth?: number };
   }>("/games/:id/engine", async (req, reply) => {
     const room = rooms.get(req.params.id);
     if (!room) return reply.code(404).send({ error: "Game not found" });
 
-    const { engineColor, model, thinkMs } = req.body ?? {};
+    const { engineColor, model, thinkMs, depth } = req.body ?? {};
     if (engineColor !== TeamType.OUR && engineColor !== TeamType.OPPONENT) {
       return reply.code(400).send({ error: "engineColor must be 'w' or 'b'" });
+    }
+
+    const resolvedThinkMs = thinkMs ?? DEFAULT_THINK_MS;
+    if (!Number.isInteger(resolvedThinkMs) || resolvedThinkMs < 1) {
+      return reply.code(400).send({ error: "thinkMs must be a positive integer" });
+    }
+
+    const resolvedDepth = depth ?? DEFAULT_DEPTH;
+    if (!Number.isInteger(resolvedDepth) || resolvedDepth < 1) {
+      return reply.code(400).send({ error: "depth must be a positive integer" });
     }
 
     const resolvedModel = model ?? process.env.MODEL_PATH;
@@ -66,8 +78,14 @@ export async function registerRoutes(app: FastifyInstance) {
     room.engine = {
       color: engineColor,
       model: resolvedModel,
-      thinkMs: thinkMs ?? DEFAULT_THINK_MS,
+      thinkMs: resolvedThinkMs,
+      depth: resolvedDepth,
     };
-    return { engineColor, model: resolvedModel, thinkMs: room.engine.thinkMs };
+    return {
+      engineColor,
+      model: resolvedModel,
+      thinkMs: room.engine.thinkMs,
+      depth: room.engine.depth,
+    };
   });
 }

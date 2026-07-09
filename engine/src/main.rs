@@ -1,5 +1,7 @@
-use chesskers_engine::cli::{self, BestMoveOptions};
+use chesskers_engine::cli::{self, BestMoveOptions, EvalPromotionOptions};
+use chesskers_engine::mcts::PROMOTION_WIN_THRESHOLD;
 use std::io::{self, Read};
+use std::path::PathBuf;
 use std::process;
 
 fn read_stdin() -> String {
@@ -15,10 +17,11 @@ fn read_stdin() -> String {
 
 fn usage() -> ! {
     eprintln!(
-        "usage: chesskers-engine <legal-moves|apply-move|is-terminal|play-random|best-move> [flags]"
+        "usage: chesskers-engine <legal-moves|apply-move|is-terminal|play-random|best-move|eval-promotion> [flags]"
     );
     eprintln!("  play-random [--seed N]");
     eprintln!("  best-move --model PATH [--think-ms N] [--depth N]");
+    eprintln!("  eval-promotion --challenger STEM --baseline STEM [--models-dir DIR] [--threshold RATE] [--fixtures-dir DIR]");
     process::exit(1);
 }
 
@@ -83,6 +86,72 @@ fn parse_best_move_args(mut args: impl Iterator<Item = String>) -> BestMoveOptio
     }
 }
 
+fn parse_eval_promotion_args(mut args: impl Iterator<Item = String>) -> EvalPromotionOptions {
+    let engine_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut models_dir = engine_dir.join("models").to_string_lossy().into_owned();
+    let mut fixtures_dir = engine_dir.join("../fixtures").to_string_lossy().into_owned();
+    let mut challenger = None;
+    let mut baseline = None;
+    let mut threshold = PROMOTION_WIN_THRESHOLD;
+
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "--models-dir" => {
+                models_dir = args.next().unwrap_or_else(|| {
+                    eprintln!("--models-dir requires a value");
+                    process::exit(1);
+                });
+            }
+            "--fixtures-dir" => {
+                fixtures_dir = args.next().unwrap_or_else(|| {
+                    eprintln!("--fixtures-dir requires a value");
+                    process::exit(1);
+                });
+            }
+            "--challenger" => {
+                challenger = Some(args.next().unwrap_or_else(|| {
+                    eprintln!("--challenger requires a value");
+                    process::exit(1);
+                }));
+            }
+            "--baseline" => {
+                baseline = Some(args.next().unwrap_or_else(|| {
+                    eprintln!("--baseline requires a value");
+                    process::exit(1);
+                }));
+            }
+            "--threshold" => {
+                let value = args.next().unwrap_or_else(|| {
+                    eprintln!("--threshold requires a value");
+                    process::exit(1);
+                });
+                threshold = value.parse().unwrap_or_else(|_| {
+                    eprintln!("invalid --threshold value: {value}");
+                    process::exit(1);
+                });
+            }
+            _ => {
+                eprintln!("unknown flag: {arg}");
+                process::exit(1);
+            }
+        }
+    }
+
+    EvalPromotionOptions {
+        models_dir,
+        challenger: challenger.unwrap_or_else(|| {
+            eprintln!("eval-promotion requires --challenger STEM");
+            process::exit(1);
+        }),
+        baseline: baseline.unwrap_or_else(|| {
+            eprintln!("eval-promotion requires --baseline STEM");
+            process::exit(1);
+        }),
+        threshold,
+        fixtures_dir,
+    }
+}
+
 fn main() {
     let mut args = std::env::args().skip(1);
     let Some(command) = args.next() else {
@@ -93,6 +162,23 @@ fn main() {
         let options = parse_best_move_args(args);
         let input = read_stdin();
         match cli::run_best_move(&input, &options) {
+            Ok(json) => println!("{json}"),
+            Err(err) => {
+                println!(
+                    "{}",
+                    serde_json::to_string(&err).unwrap_or_else(|_| {
+                        r#"{"error":"serialization failed"}"#.to_string()
+                    })
+                );
+                process::exit(1);
+            }
+        }
+        return;
+    }
+
+    if command == "eval-promotion" {
+        let options = parse_eval_promotion_args(args);
+        match cli::run_eval_promotion(&options) {
             Ok(json) => println!("{json}"),
             Err(err) => {
                 println!(

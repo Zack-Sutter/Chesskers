@@ -35,3 +35,22 @@
 .exit-button:hover {
     background-color: #333;
 }
+
+.history-button {
+    background: none;
+    border: 1px solid #555;
+    border-radius: 6px;
+    color: white;
+    padding: 4px 10px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.history-button:hover:not(:disabled) {
+    background-color: #333;
+}
+
+.history-button:disabled {
+    opacity: 0.35;
+    cursor: default;
+}

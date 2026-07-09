@@ -4,6 +4,8 @@ pub mod bot;
 pub mod cli;
 pub mod encoder;
 pub mod evaluator;
+pub mod mcts;
+pub mod move_index;
 pub mod rules;
 pub mod search;
 pub mod state;

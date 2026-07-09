@@ -1,32 +1,45 @@
-"""Self-play shard writer (T1-4).
+"""MCTS self-play shard writer (T1-6, Stage B).
 
-Plays random-vs-random games with the Python rules mirror, encodes every
-non-terminal position (encoder_v1), and labels it with the eventual game
-outcome from that position's side-to-move perspective (architecture §5.4 /
-§9 "Value target semantics"). Positions are written to ``training/shards/``
-as NPZ files (``states`` float32 ``[N, 16, 8, 8]``, ``outcomes`` float32
-``[N]`` in {-1, 0, +1}). Policy targets are added at T1-6.
+Plays games where both sides move by PUCT Monte-Carlo tree search (material leaf
+heuristic + uniform priors, ``chesskers/mcts.py``), encodes every non-terminal
+position (encoder_v1), and labels it with:
+
+* ``outcomes`` — the eventual game result from the position's side-to-move
+  perspective (architecture §5.4 / §9 "Value target semantics").
+* ``policy`` — the root MCTS visit-count distribution over legal moves, stored
+  sparsely as ``(policy_idx, policy_val)`` using the §5.3 move index.
+
+Shards are NPZ files with keys ``states`` (``float32 [N,16,8,8]``), ``outcomes``
+(``float32 [N]``), ``policy_idx`` (``int32 [N,K]``, ``-1`` padded) and
+``policy_val`` (``float32 [N,K]``, ``0`` padded). See docs/architecture.md §9.
 
 Usage:
-    python self_play.py --positions 1000 --out shards/ --seed 42
+    python self_play.py --positions 3000 --sims 64 --out shards/ --seed 42
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import random
 from pathlib import Path
 
 import numpy as np
 
-from chesskers import Board, apply_move, encode
-from chesskers.rules import BLACK, WHITE
+from chesskers import Board, apply_move, encode, move_index
+from chesskers.mcts import material_value, run_mcts
 
 _FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures"
 _INITIAL_BOARD = _FIXTURE_DIR / "initial_board.json"
 _SHARD_DIR = Path(__file__).resolve().parent / "shards"
 
-_PROMOTION_ROW = {WHITE: 7, BLACK: 0}
+# Max sparse policy entries per position. Chesskers rarely exceeds ~40 legal
+# moves (white's full army); 128 leaves generous headroom, overflow is truncated
+# to the most-visited moves.
+MAX_POLICY_ENTRIES = 128
+
+# Plies to sample move ∝ visits (exploration) before switching to greedy play.
+_TEMPERATURE_PLIES = 16
 
 
 def _initial_board() -> Board:
@@ -36,20 +49,6 @@ def _initial_board() -> Board:
     return board
 
 
-def _legal_moves(board: Board) -> list[dict]:
-    """All legal moves for the side to move as apply_move payloads."""
-    moves: list[dict] = []
-    for p in board.pieces:
-        for dx, dy in p.possible_moves:
-            move: dict = {"from": {"x": p.x, "y": p.y}, "to": {"x": dx, "y": dy}}
-            # ponytail: auto-queen for value-only self-play; per-piece promotion
-            # variety lands with the policy head at T1-6.
-            if p.type == "pawn" and dy == _PROMOTION_ROW[p.team]:
-                move["promotion"] = "queen"
-            moves.append(move)
-    return moves
-
-
 def _outcomes(teams: list[str], winner: str | None) -> list[float]:
     """Value target per position from its side-to-move perspective."""
     if winner is None:
@@ -57,82 +56,195 @@ def _outcomes(teams: list[str], winner: str | None) -> list[float]:
     return [1.0 if team == winner else -1.0 for team in teams]
 
 
-def play_game(rng, max_moves: int) -> tuple[list[np.ndarray], list[str], str | None]:
-    """Play one random game; return (encoded states, side-to-move teams, winner)."""
+def _policy_target(visits: list[tuple[dict, int]]) -> list[tuple[int, float]]:
+    """Normalize visit counts into a sparse (move_index, prob) policy target."""
+    total = sum(c for _, c in visits)
+    if total == 0:
+        return []
+    target = [(move_index(m), c / total) for m, c in visits if c > 0]
+    if len(target) > MAX_POLICY_ENTRIES:
+        target.sort(key=lambda t: t[1], reverse=True)
+        target = target[:MAX_POLICY_ENTRIES]
+    return target
+
+
+def _choose_move(visits: list[tuple[dict, int]], rng: random.Random, greedy: bool) -> dict:
+    counts = [c for _, c in visits]
+    total = sum(counts)
+    if total == 0:  # no simulations recorded (degenerate) — pick uniformly
+        return rng.choice([m for m, _ in visits])
+    if greedy:
+        return max(visits, key=lambda mc: mc[1])[0]
+    threshold = rng.random() * total
+    acc = 0
+    for move, count in visits:
+        acc += count
+        if threshold < acc:
+            return move
+    return visits[-1][0]
+
+
+def play_game(rng: random.Random, max_moves: int, sims: int, c_puct: float,
+              value_fn=material_value):
+    """Play one MCTS self-play game.
+
+    Returns ``(states, teams, policies, winner)`` where ``policies`` is a list of
+    sparse ``[(move_index, prob), ...]`` targets aligned with ``states``.
+    ``value_fn`` is the MCTS leaf evaluator (material heuristic by default, or the
+    v001 net for higher-quality visit-count policy targets).
+    """
     board = _initial_board()
     states: list[np.ndarray] = []
     teams: list[str] = []
+    policies: list[list[tuple[int, float]]] = []
 
-    for _ in range(max_moves):
+    for ply in range(max_moves):
         if board.winning_team is not None:
             break
-        moves = _legal_moves(board)
-        if not moves:
-            # No terminal win but nobody can move: treat as a draw and stop.
-            return states, teams, None
+        _root_value, visits = run_mcts(board, sims, c_puct, rng, True, value_fn)
+        if not visits:
+            return states, teams, policies, None  # no legal moves: treat as draw
+
         states.append(encode(board))
         teams.append(board.current_team())
-        result = apply_move(board, rng.choice(moves))
-        if not result.ok:  # generated only legal moves, so this is a bug guard
+        policies.append(_policy_target(visits))
+
+        move = _choose_move(visits, rng, greedy=ply >= _TEMPERATURE_PLIES)
+        result = apply_move(board, move)
+        if not result.ok:
             raise RuntimeError(f"self-play produced an illegal move: {result}")
         board = result.board
 
-    return states, teams, board.winning_team
+    return states, teams, policies, board.winning_team
 
 
-def generate_positions(rng, num_positions: int, max_moves: int):
-    """Play games until at least ``num_positions`` are collected."""
+def generate_positions(rng: random.Random, num_positions: int, max_moves: int,
+                       sims: int = 64, c_puct: float = 1.5, v001=None):
+    """Play games until at least ``num_positions`` are collected.
+
+    With no ``v001`` model, MCTS uses the material leaf heuristic and value targets
+    are the eventual game outcome (§5.4). When ``v001`` (an ``_V001`` wrapper) is
+    supplied, MCTS is guided by v001's value (higher-quality visit-count policy
+    targets) and value targets are distilled from v001 — anchoring v002's value to
+    v001's so the policy head is the net improvement measured by the T1-6 suite.
+    """
+    value_fn = v001.value if v001 is not None else material_value
     states: list[np.ndarray] = []
     outcomes: list[float] = []
+    policies: list[list[tuple[int, float]]] = []
     games = 0
     while len(states) < num_positions:
-        game_states, game_teams, winner = play_game(rng, max_moves)
+        game_states, game_teams, game_policies, winner = play_game(
+            rng, max_moves, sims, c_puct, value_fn
+        )
         states.extend(game_states)
         outcomes.extend(_outcomes(game_teams, winner))
+        policies.extend(game_policies)
         games += 1
+
+    states_arr = np.asarray(states, dtype=np.float32)
+    if v001 is not None:
+        values = v001.values(states_arr).astype(np.float32)
+    else:
+        values = np.asarray(outcomes, dtype=np.float32)
+    policy_idx, policy_val = _pack_policies(policies)
     return (
-        np.asarray(states, dtype=np.float32),
-        np.asarray(outcomes, dtype=np.float32),
+        states_arr,
+        values,
+        policy_idx,
+        policy_val,
         games,
     )
 
 
-def write_shards(states: np.ndarray, outcomes: np.ndarray, out_dir: Path,
-                 shard_size: int) -> list[Path]:
+class _V001:
+    """v001 value net (onnxruntime) used as the MCTS leaf and value-target source.
+
+    v001 was exported with a fixed batch of 1, so states are evaluated one at a
+    time. Raises on construction if onnxruntime or the model is unavailable.
+    """
+
+    def __init__(self, model_path: Path) -> None:
+        import onnxruntime as ort  # noqa: PLC0415 — optional, only for --distill
+
+        self._session = ort.InferenceSession(str(model_path))
+        self._input = self._session.get_inputs()[0].name
+
+    def _eval(self, tensor: np.ndarray) -> float:
+        out = self._session.run(None, {self._input: tensor[None].astype(np.float32)})[0]
+        return float(np.asarray(out).reshape(-1)[0])
+
+    def value(self, board) -> float:
+        return self._eval(encode(board))
+
+    def values(self, states: np.ndarray) -> np.ndarray:
+        return np.array([self._eval(s) for s in states], dtype=np.float32)
+
+
+def _pack_policies(policies: list[list[tuple[int, float]]]) -> tuple[np.ndarray, np.ndarray]:
+    """Pad ragged sparse policies into fixed-width ``[N, MAX_POLICY_ENTRIES]`` arrays."""
+    n = len(policies)
+    idx = np.full((n, MAX_POLICY_ENTRIES), -1, dtype=np.int32)
+    val = np.zeros((n, MAX_POLICY_ENTRIES), dtype=np.float32)
+    for i, entries in enumerate(policies):
+        for j, (mi, prob) in enumerate(entries):
+            idx[i, j] = mi
+            val[i, j] = prob
+    return idx, val
+
+
+def write_shards(states: np.ndarray, outcomes: np.ndarray, policy_idx: np.ndarray,
+                 policy_val: np.ndarray, out_dir: Path, shard_size: int) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     paths: list[Path] = []
     for i, start in enumerate(range(0, len(states), shard_size)):
         end = start + shard_size
         path = out_dir / f"shard_{i:04d}.npz"
-        np.savez_compressed(path, states=states[start:end], outcomes=outcomes[start:end])
+        np.savez_compressed(
+            path,
+            states=states[start:end],
+            outcomes=outcomes[start:end],
+            policy_idx=policy_idx[start:end],
+            policy_val=policy_val[start:end],
+        )
         paths.append(path)
     return paths
 
 
 def main() -> None:
-    import random
-
-    parser = argparse.ArgumentParser(description="Chesskers self-play shard writer (T1-4)")
-    parser.add_argument("--positions", type=int, default=1000,
+    parser = argparse.ArgumentParser(description="Chesskers MCTS self-play shard writer (T1-6)")
+    parser.add_argument("--positions", type=int, default=3000,
                         help="minimum number of positions to generate")
-    parser.add_argument("--max-moves", type=int, default=300,
-                        help="move cap per game (uncapped random games can loop; §9 draw note)")
-    parser.add_argument("--shard-size", type=int, default=512,
-                        help="positions per NPZ shard")
+    parser.add_argument("--max-moves", type=int, default=160,
+                        help="move cap per game (no draw rules; §9/§11)")
+    parser.add_argument("--sims", type=int, default=64, help="MCTS simulations per move")
+    parser.add_argument("--c-puct", type=float, default=1.5, help="PUCT exploration constant")
+    parser.add_argument("--shard-size", type=int, default=512, help="positions per NPZ shard")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--out", type=Path, default=_SHARD_DIR,
                         help="output directory for NPZ shards")
+    parser.add_argument("--distill", type=Path, default=None, metavar="V001_ONNX",
+                        help="path to v001.onnx; guide MCTS with its value and distill it as the "
+                             "value target (anchors v002 value to v001; requires onnxruntime)")
     args = parser.parse_args()
 
-    rng = random.Random(args.seed)
-    states, outcomes, games = generate_positions(rng, args.positions, args.max_moves)
-    paths = write_shards(states, outcomes, args.out, args.shard_size)
+    v001 = _V001(args.distill) if args.distill else None
 
-    wins = int((outcomes == 1.0).sum())
-    losses = int((outcomes == -1.0).sum())
-    draws = int((outcomes == 0.0).sum())
+    rng = random.Random(args.seed)
+    states, values, policy_idx, policy_val, games = generate_positions(
+        rng, args.positions, args.max_moves, args.sims, args.c_puct, v001
+    )
+    paths = write_shards(states, values, policy_idx, policy_val, args.out, args.shard_size)
+
     print(f"{len(states)} positions from {games} games -> {len(paths)} shard(s) in {args.out}")
-    print(f"outcomes: +1={wins}  -1={losses}  0={draws}")
+    if v001 is not None:
+        print(f"value targets: distilled from {args.distill} "
+              f"(mean {values.mean():.3f}, range [{values.min():.3f}, {values.max():.3f}])")
+    else:
+        wins = int((values == 1.0).sum())
+        losses = int((values == -1.0).sum())
+        draws = int((values == 0.0).sum())
+        print(f"outcomes: +1={wins}  -1={losses}  0={draws}")
 
 
 if __name__ == "__main__":

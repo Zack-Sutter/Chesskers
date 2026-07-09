@@ -5,6 +5,7 @@ only through ``fixtures/*.json``. See docs/architecture.md §7 T1-2.
 """
 
 from .encoder import encode, encode_serialized, tensor_fnv1a
+from .move_index import POLICY_SIZE, move_index
 from .rules import (
     ApplyMoveResult,
     Board,
@@ -18,8 +19,10 @@ __all__ = [
     "Board",
     "PendingPromotion",
     "Piece",
+    "POLICY_SIZE",
     "apply_move",
     "encode",
     "encode_serialized",
+    "move_index",
     "tensor_fnv1a",
 ]

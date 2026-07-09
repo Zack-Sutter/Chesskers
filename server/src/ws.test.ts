@@ -1,16 +1,16 @@
 import { randomUUID } from "node:crypto";
-import { initialBoard } from "game-engine";
+import { initialBoard, TeamType } from "game-engine";
 import { describe, expect, it } from "vitest";
-import type { GameRoom } from "./routes.js";
+import type { EngineConfig, GameRoom } from "./routes.js";
 import { handleJoin, handleMove } from "./ws.js";
 
 function mockSocket() {
   return { readyState: 1, send: () => {}, OPEN: 1 } as import("ws").WebSocket;
 }
 
-function makeRoom(): GameRoom {
+function makeRoom(engine?: EngineConfig): GameRoom {
   const board = initialBoard.clone();
-  return { id: randomUUID(), board, createdAt: Date.now() };
+  return { id: randomUUID(), board, engine, createdAt: Date.now() };
 }
 
 describe("WebSocket move pipeline", () => {
@@ -48,5 +48,39 @@ describe("WebSocket move pipeline", () => {
       { type: "error", message: "Cannot move that piece" },
     ]);
     expect(room.board.totalTurns).toBe(1);
+  });
+});
+
+describe("engine-aware seat assignment", () => {
+  it("assigns white when engine plays black", () => {
+    const room = makeRoom({
+      color: TeamType.OPPONENT,
+      model: "m.onnx",
+      thinkMs: 2000,
+      depth: 4,
+    });
+    const ws = mockSocket();
+    const messages = handleJoin(ws, room, room.id);
+
+    const joined = messages.find((m) => m.type === "joined");
+    expect(joined?.color).toBe(TeamType.OUR);
+    expect(room.whiteSocket).toBe(ws);
+    expect(room.blackSocket).toBeUndefined();
+  });
+
+  it("assigns black when engine plays white", () => {
+    const room = makeRoom({
+      color: TeamType.OUR,
+      model: "m.onnx",
+      thinkMs: 2000,
+      depth: 4,
+    });
+    const ws = mockSocket();
+    const messages = handleJoin(ws, room, room.id);
+
+    const joined = messages.find((m) => m.type === "joined");
+    expect(joined?.color).toBe(TeamType.OPPONENT);
+    expect(room.blackSocket).toBe(ws);
+    expect(room.whiteSocket).toBeUndefined();
   });
 });

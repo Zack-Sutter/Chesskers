@@ -2,8 +2,9 @@ use crate::apply::apply_move;
 use crate::board::Board;
 use crate::bot::play_random_game;
 use crate::evaluator::OnnxEvaluator;
+use crate::mcts::{promotion_win_rate, PromotionSuiteConfig};
 use crate::search::{search_best_move_timed, TimedSearchConfig};
-use crate::state::{Move, SerializedBoard, Team};
+use crate::state::{GoldenFixture, Move, SerializedBoard, Team};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -38,6 +39,26 @@ pub struct BestMoveOptions {
     pub model_path: String,
     pub think_ms: u64,
     pub depth: u32,
+}
+
+#[derive(Debug, Clone)]
+pub struct EvalPromotionOptions {
+    pub models_dir: String,
+    pub challenger: String,
+    pub baseline: String,
+    pub threshold: f64,
+    pub fixtures_dir: String,
+}
+
+#[derive(Debug, Serialize, PartialEq)]
+pub struct EvalPromotionResult {
+    pub challenger: String,
+    pub baseline: String,
+    #[serde(rename = "winRate")]
+    pub win_rate: f64,
+    pub games: u32,
+    pub threshold: f64,
+    pub promoted: bool,
 }
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -131,6 +152,41 @@ pub fn run_best_move(stdin: &str, options: &BestMoveOptions) -> Result<String, C
         error: e.to_string(),
     })?;
     serde_json::to_string(&BestMoveResult { mv }).map_err(|e| CliError {
+        error: e.to_string(),
+    })
+}
+
+pub fn run_eval_promotion(options: &EvalPromotionOptions) -> Result<String, CliError> {
+    let fixture_path = Path::new(&options.fixtures_dir).join("initial_board.json");
+    let fixture_json = std::fs::read_to_string(&fixture_path).map_err(|e| CliError {
+        error: format!("read {}: {e}", fixture_path.display()),
+    })?;
+    let fixture = GoldenFixture::from_json(&fixture_json).map_err(|e| CliError {
+        error: e.to_string(),
+    })?;
+    let mut board = Board::from_serialized(&fixture.board);
+    board.calculate_all_moves();
+
+    let config = PromotionSuiteConfig::default();
+    let games = config.seed_count * 2;
+    let win_rate = promotion_win_rate(
+        Path::new(&options.models_dir),
+        &options.challenger,
+        &options.baseline,
+        &board,
+        &config,
+    )
+    .map_err(|e| CliError { error: e })?;
+
+    serde_json::to_string(&EvalPromotionResult {
+        challenger: options.challenger.clone(),
+        baseline: options.baseline.clone(),
+        win_rate,
+        games,
+        threshold: options.threshold,
+        promoted: win_rate >= options.threshold,
+    })
+    .map_err(|e| CliError {
         error: e.to_string(),
     })
 }

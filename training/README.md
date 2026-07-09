@@ -27,6 +27,7 @@ Requires Python 3.10+ (tested on 3.13).
 | `onnx`   | Export trained models for the Rust ORT engine    |
 | `pyyaml` | Read `configs/encoder_v1.yaml` tensor spec       |
 | `pytest` | Run fixture-parity tests against `fixtures/*.json`|
+| `onnxruntime` | Optional leaf evaluator for `--distill` in MCTS self-play (T1-6) |
 
 ## Layout (built out across T1-2 … T1-7)
 
@@ -37,7 +38,7 @@ training/
   chesskers/            # rules mirror + encoder (T1-2, T1-3)
   configs/
     encoder_v1.yaml     # tensor layout spec (T1-3)
-  self_play.py          # random self-play shard writer (T1-4)
+  self_play.py          # self-play shard writer (T1-4 random, T1-6 MCTS)
   train.py              # value/policy training + ONNX export (T1-5, T1-6)
   promote.py            # iterative promotion loop (T1-7)
   shards/               # generated NPZ training data
@@ -94,12 +95,66 @@ cargo test --release search_vs_random_win_rate -- --ignored --nocapture   # 100-
 The value-only engine scored **100/100 vs random** at depth 2 (arch §9 Stage A
 exit target of >90% met).
 
+## Policy + value model (T1-6)
+
+MCTS self-play with v001-distilled value targets and visit-count policy labels:
+
+```bash
+cd training
+python self_play.py --positions 5120 --sims 100 --distill models/v001.onnx --out shards/ --seed 42
+python train.py --shards shards/ --out models/v002.onnx --epochs 40 --policy-weight 1.0 --seed 42
+cp models/v002.onnx ../engine/models/v002.onnx
+```
+
+`--distill` loads `v001.onnx` via onnxruntime as the MCTS leaf value **and** as
+the distilled value target (anchors v002's value head to v001). Without it,
+self-play falls back to material leaf values and terminal outcomes.
+
+The exported graph returns two outputs: `value` (scalar, tanh) and `policy`
+(`[1, 16384]` logits over the §5.3 move index). `PolicyValueNet` uses **separate**
+conv trunks for value and policy. Verify in the engine:
+
+```bash
+cd engine
+cargo test --release mcts::tests::v002_diagnostic -- --ignored --nocapture   # value vs policy breakdown
+cargo test --release mcts::tests::v002_beats_v001 -- --ignored --nocapture   # ≥55% gate
+```
+
+Stage B exit: **55.0%** vs v001 in the fixed MCTS-vs-MCTS suite.
+
+## Iterative promotion (T1-7)
+
+One scripted iteration: distill from incumbent → train candidate → eval → promote if ≥
+55%. Models use the `vNNN.onnx` naming convention (`v001` value-only, `v002+`
+policy+value; three-digit zero-padded).
+
+```bash
+cd training
+python promote.py --incumbent models/v002.onnx
+```
+
+Options:
+
+| Flag | Default | Purpose |
+| ---- | ------- | ------- |
+| `--positions` | 5120 | MCTS self-play positions (`--distill` incumbent) |
+| `--epochs` | 40 | training epochs for candidate |
+| `--threshold` | 0.55 | promotion gate (matches arch §9) |
+| `--iterations` | 1 | stop early if a candidate fails the gate |
+| `--eval-only` | off | skip self-play/train; evaluate `--candidate` vs incumbent |
+| `--skip-train` | off | require existing `--candidate` ONNX |
+
+The gate runs `chesskers-engine eval-promotion` (fixed 30-game MCTS-vs-MCTS suite
+from arch §9). On promotion the candidate is copied to `engine/models/`.
+
+```bash
+cd engine
+cargo run --release -- eval-promotion --challenger v003 --baseline v002
+```
+
 ## Milestone status
 
-**T1-1** (scaffold), **T1-2** (rules mirror), **T1-3** (board encoder),
-**T1-4** (self-play shard writer), and **T1-5** (value-only CNN + ONNX export)
-are complete. The encoder (`chesskers/encoder.py`, spec
-`configs/encoder_v1.yaml`) produces byte-identical tensors to the Rust encoder on
-every fixture, verified via FNV-1a golden hashes in `tests/test_encoder.py`.
-Remaining milestones (T1-6 policy+MCTS, T1-7 iterative loop) are tracked in
-[docs/architecture.md](../docs/architecture.md) §7.
+**T1-1** through **T1-7** are complete. The encoder (`chesskers/encoder.py`,
+spec `configs/encoder_v1.yaml`) produces byte-identical tensors to the Rust encoder
+on every fixture, verified via FNV-1a golden hashes in `tests/test_encoder.py`.
+Iterative promotion is documented in [docs/architecture.md](../docs/architecture.md) §7 / §9 Stage C.

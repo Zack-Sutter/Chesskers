@@ -3,6 +3,8 @@
 
 use crate::board::Board;
 use crate::encoder::{encode, BOARD_DIM, NUM_PLANES};
+use crate::move_index::{move_index, POLICY_SIZE};
+use crate::search::expand_moves;
 use crate::state::Move;
 use std::fmt;
 use std::path::Path;
@@ -83,11 +85,51 @@ impl Evaluator for OnnxEvaluator {
             )));
         }
 
-        Ok(EvalResult {
-            value,
-            policy: Vec::new(),
-        })
+        // Dual-head models (v002+) emit a second output: 16384 policy logits.
+        // Value-only models (v001) have one output -> empty policy (MCTS falls
+        // back to uniform priors).
+        let policy = if outputs.len() > 1 {
+            let logits = outputs[1]
+                .to_plain_array_view::<f32>()
+                .map_err(|e| EvalError::InvalidOutput(e.to_string()))?;
+            let logits = logits.as_slice().ok_or_else(|| {
+                EvalError::InvalidOutput("policy output not contiguous".into())
+            })?;
+            if logits.len() != POLICY_SIZE {
+                return Err(EvalError::InvalidOutput(format!(
+                    "policy output len {} != {POLICY_SIZE}",
+                    logits.len()
+                )));
+            }
+            softmax_legal(state, logits)
+        } else {
+            Vec::new()
+        };
+
+        Ok(EvalResult { value, policy })
     }
+}
+
+/// Softmax the policy logits over just the legal (promotion-expanded) moves.
+fn softmax_legal(board: &Board, logits: &[f32]) -> Vec<(Move, f32)> {
+    let moves = expand_moves(board);
+    if moves.is_empty() {
+        return Vec::new();
+    }
+    let raw: Vec<f32> = moves.iter().map(|m| logits[move_index(m)]).collect();
+    let max = raw.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+    let exps: Vec<f32> = raw.iter().map(|v| (v - max).exp()).collect();
+    let sum: f32 = exps.iter().sum();
+    if sum <= 0.0 || !sum.is_finite() {
+        // Degenerate logits -> uniform.
+        let p = 1.0 / moves.len() as f32;
+        return moves.into_iter().map(|m| (m, p)).collect();
+    }
+    moves
+        .into_iter()
+        .zip(exps)
+        .map(|(m, e)| (m, e / sum))
+        .collect()
 }
 
 #[cfg(test)]

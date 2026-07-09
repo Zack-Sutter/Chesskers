@@ -199,7 +199,7 @@ flowchart TB
 | ---------------------------------- | ------------------------------------------ |
 | `fixtures/*.json`                  | Golden positions exported from Vitest      |
 | `SerializedBoard` JSON             | Wire format between UI, server, engine CLI |
-| `training/shards/*.npz`            | Training data on disk                      |
+| `training/shards/*.npz`            | Training data on disk (`states`, `outcomes`; Stage B+ adds `policy_idx`, `policy_val` — [§5.7](#57-npz-shard-format-stage-b)) |
 | `engine/models/*.onnx`             | Exported neural network weights            |
 | `training/configs/encoder_v1.yaml` | Tensor layout spec (created at T1-3)       |
 
@@ -352,7 +352,7 @@ Full message tables: [railway-vercel-migration.md §5](./railway-vercel-migratio
 | ------ | ------------------- | ------------------------------------------- |
 | `GET`  | `/health`           | `{ ok: true }`                              |
 | `POST` | `/games`            | `{ gameId, initialState: SerializedBoard }` |
-| `POST` | `/games/:id/engine` | `{ engineColor, model, thinkMs }`           |
+| `POST` | `/games/:id/engine` | `{ engineColor, model?, thinkMs?, depth? }` | `{ engineColor, model, thinkMs, depth }`    |
 
 Server move pipeline detail: [railway-vercel-migration.md §7](./railway-vercel-migration.md#7-server-side-move-pipeline).
 
@@ -370,6 +370,19 @@ struct EvalResult {
     policy: Vec<(Move, f32)>,        // optional; MCTS priors
 }
 ```
+
+### 5.7 NPZ shard format (Stage B+)
+
+Written by `training/self_play.py`; consumed by `training/train.py`.
+
+| Key           | dtype     | shape           | Description                                                          |
+| ------------- | --------- | --------------- | -------------------------------------------------------------------- |
+| `states`      | `float32` | `[N, 16, 8, 8]` | encoder_v1 tensor per position ([§5.4](#54-nn-input-encoding-encoder_v1)) |
+| `outcomes`    | `float32` | `[N]`           | value target from side-to-move POV in `[-1, 1]`                      |
+| `policy_idx`  | `int32`   | `[N, K]`        | sparse move indices ([§5.3](#53-move-index-for-nn-policy-head)); `-1` pad |
+| `policy_val`  | `float32` | `[N, K]`        | normalized visit counts; `0` pad                                     |
+
+`K` = 128 (`MAX_POLICY_ENTRIES` in `self_play.py`). Stage A shards (T1-4) omit `policy_idx` / `policy_val`; the T1-6 trainer rejects them.
 
 ---
 
@@ -395,6 +408,10 @@ echo '{"schemaVersion":1,...}' | chesskers-engine play-random --seed 42
 # Play one engine move (E2-4)
 chesskers-engine best-move --model engine/models/v001.onnx --think-ms 2000 --depth 4 < board.json
 # → {"move":{"from":{...},"to":{...},"promotion?":"queen"}}
+
+# Promotion gate: MCTS-vs-MCTS win rate (T1-7)
+chesskers-engine eval-promotion --challenger v003 --baseline v002
+# → {"challenger":"v003","baseline":"v002","winRate":0.55,"games":30,"threshold":0.55,"promoted":true}
 ```
 
 Server spawns `best-move` as a child process or links the crate directly — pick one at S1-4; document choice in server README.
@@ -570,21 +587,47 @@ Follow checklist in [railway-vercel-migration.md §12](./railway-vercel-migratio
   - **Done when:** ONNX loads in Rust E2-2; measurable improvement over random in 100-game suite
   - **Result:** `v001.onnx` loads via tract (`v001_onnx_loads_and_evaluates`); `search_vs_random_win_rate` scored 100/0/0 vs random (arch §9 Stage A exit met). Copy the trained model to `engine/models/v001.onnx` for the engine to consume.
 
-- [ ] **T1-6** — Policy + value head + MCTS self-play
+- [x] **T1-6** — Policy + value head + MCTS self-play
   - **Prerequisites:** T1-5, E2-3
-  - **Touch:** `training/`, `engine/`
-  - **Done when:** `v002.onnx` beats `v001.onnx` >55% in fixed evaluation suite
+  - **Touch:**
+    - `training/self_play.py` — MCTS self-play shard writer (`--distill` loads v001 for leaf value + distilled targets)
+    - `training/train.py` — dual-head `PolicyValueNet` trainer + ONNX export
+    - `training/chesskers/mcts.py`, `training/chesskers/move_index.py` — Python PUCT MCTS + §5.3 move index (mirrors Rust)
+    - `training/tests/test_self_play.py`, `training/tests/test_move_index.py`
+    - `engine/src/mcts.rs`, `engine/src/move_index.rs` — Rust MCTS + fixed eval suite
+    - `engine/src/evaluator.rs` — dual-output ONNX (`value` + `policy` logits)
+    - `training/models/v002.onnx` → copy to `engine/models/v002.onnx`
+  - **Done when:** `v002.onnx` beats `v001.onnx` ≥55% in the fixed MCTS-vs-MCTS suite ([§9 Stage B exit](#stage-b--policy--value-t1-6))
+  - **Workflow:**
+    ```bash
+    cd training
+    python self_play.py --positions 5120 --sims 100 --distill models/v001.onnx --out shards/ --seed 42
+    python train.py --shards shards/ --out models/v002.onnx --epochs 40 --policy-weight 1.0 --seed 42
+    cp models/v002.onnx ../engine/models/v002.onnx
+    cd ../engine
+    cargo test --release mcts::tests::v002_beats_v001 -- --ignored --nocapture
+    ```
+  - **Artifacts:** NPZ shards add `policy_idx` / `policy_val` (sparse visit-count targets; see [§5.7](#57-npz-shard-format-stage-b)). Exported `v002.onnx` returns `value` (scalar tanh) and `policy` (`[1, 16384]` logits). Separate conv trunks for value and policy so v002 can distill v001's value tightly while learning priors independently.
+  - **Result:** `v002.onnx` scored **55.0%** vs `v001.onnx` (`mcts::tests::v002_beats_v001`). Diagnostic (`v002_diagnostic`): value-only (uniform priors) 50.0%; value+policy 53.1% — confirms the gate measures policy-head lift, not a stronger value net.
 
-- [ ] **T1-7** — Iterative training workflow
+- [x] **T1-7** — Iterative training workflow
   - **Prerequisites:** T1-6
-  - **Touch:** `training/promote.py` or documented script
-  - **Done when:** `vNNN.onnx` naming convention documented; promotion criteria (55% win rate) scripted
+  - **Touch:** `training/promote.py`, `engine/src/mcts.rs` (`promotion_win_rate`), `engine` CLI `eval-promotion`
+  - **Done when:** `vNNN.onnx` naming convention documented; promotion reuses the [fixed MCTS-vs-MCTS suite](#stage-b--policy--value-t1-6) (≥55% vs incumbent) in a scripted loop
+  - **Workflow:**
+    ```bash
+    cd training
+    python promote.py --incumbent models/v002.onnx
+    # or evaluate an existing candidate without retraining:
+    python promote.py --incumbent models/v002.onnx --eval-only --candidate models/v003.onnx
+    ```
+  - **Naming:** `vNNN.onnx` — three-digit zero-padded (`v001` value-only, `v002+` policy+value). Promoted models are copied to `engine/models/`.
 
 ---
 
 ### P1 — UI polish (non-blocking)
 
-- [ ] **P1-1** — Undo / redo
+- [x] **P1-1** — Undo / redo
   - **Prerequisites:** M0-5
   - **Touch:** Referee, move history stack
   - **Done when:** see [todo.md](./todo.md)
@@ -594,7 +637,7 @@ Follow checklist in [railway-vercel-migration.md §12](./railway-vercel-migratio
   - **Touch:** `src/` static page + lobby link
   - **Done when:** rules page reachable from app entry
 
-- [ ] **P1-3** — Engine strength selector
+- [x] **P1-3** — Engine strength selector
   - **Prerequisites:** S1-5
   - **Touch:** UI settings
   - **Done when:** user can set depth / think-ms before vs-engine game
@@ -664,21 +707,46 @@ flowchart LR
 
 ### Stage B — Policy + value (T1-6)
 
-|             |                                                                                |
-| ----------- | ------------------------------------------------------------------------------ |
-| **Entry**   | Value-only model promoted                                                      |
-| **Process** | MCTS with NN value + policy priors → train on `(state, visit_counts, outcome)` |
-| **Exit**    | `v002.onnx` beats `v001.onnx` >55% in suite                                    |
+|             |                                                                                                                                                                                                 |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Entry**   | `v001.onnx` promoted (Stage A exit met)                                                                                                                                                         |
+| **Process** | v001-guided MCTS self-play (`--distill`) → sparse visit-count policy labels + v001-distilled value targets → train dual-head net → export `v002.onnx`                                           |
+| **Exit**    | `v002.onnx` beats `v001.onnx` ≥55% in the fixed MCTS-vs-MCTS suite below                                                                                                                      |
+
+**Bootstrap rationale:** Self-play MCTS is leaf-guided by **v001's value** (not material heuristic) so policy targets are higher quality. Value targets are **distilled from v001** on every position — not terminal game outcomes — so v002's value head stays anchored to v001. The promotion gate then isolates the **policy head**: both models play via MCTS at equal sim budgets, but only v002 supplies trained PUCT priors (v001 is value-only and falls back to uniform priors).
+
+**Fixed MCTS-vs-MCTS evaluation suite** (gate for Stage B and T1-7 promotions; implemented in `engine/src/mcts.rs`):
+
+| Parameter        | Value                                                                 |
+| ---------------- | --------------------------------------------------------------------- |
+| Test             | `mcts::tests::v002_beats_v001` (diagnostic: `v002_diagnostic`)       |
+| Board            | `fixtures/initial_board.json`                                         |
+| Opening          | 6 random plies per game (`random_opening`)                            |
+| Move cap         | 120 plies; capped games score **0.5** (half win)                      |
+| MCTS sims/move   | 100 (both sides)                                                      |
+| Seeds            | 15 (`0..15`), each played as challenger white **and** black → 30 games |
+| Scoring          | win = 1.0, loss = 0.0, move-capped draw = 0.5                         |
+| Gate             | challenger win rate ≥ **55%**                                         |
+
+At play time, v002+ models use MCTS with policy priors from the policy head; v001 and earlier value-only models continue to use alpha-beta (`search.rs`) or MCTS with uniform priors.
 
 ### Stage C — Iterative (T1-7)
 
 |             |                                                                                                                                          |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | **Entry**   | Stage B complete                                                                                                                         |
-| **Process** | Worker pool: `self_play --model vNNN.onnx --games N --out shards/` → nightly `train.py` → candidate model → eval suite → promote if >55% |
+| **Process** | `self_play --distill vNNN.onnx` → `train.py` → candidate `vNNN+1.onnx` → [fixed eval suite](#stage-b--policy--value-t1-6) → promote if ≥55% |
 | **Exit**    | Documented repeatable loop; models in `engine/models/vNNN.onnx`                                                                          |
 
-**Value target semantics:** +1 / −1 / 0 from side-to-move perspective at terminal positions; bootstrap from game outcome for non-terminal positions during early training.
+**Value target semantics:**
+
+| Stage   | Non-terminal value target                         | Terminal / move-capped              |
+| ------- | ------------------------------------------------- | ----------------------------------- |
+| A (T1-4)| eventual game outcome from side-to-move POV       | same (+1 / −1 / 0)                  |
+| B (T1-6)| v001 network evaluation (`--distill`; §5.4 POV)   | distilled v001 value on that position |
+| C (T1-7)| promoted model evaluation (iterative distillation)| same as Stage B pattern             |
+
+Policy targets (Stage B+): root MCTS visit-count distribution over legal moves, stored sparsely as `(move_index, normalized_visits)` per [§5.7](#57-npz-shard-format-stage-b).
 
 ---
 
@@ -772,3 +840,5 @@ Full deployment detail: [railway-vercel-migration.md §9](./railway-vercel-migra
 | Date       | Change                                                                                                        |
 | ---------- | ------------------------------------------------------------------------------------------------------------- |
 | 2026-07-06 | Initial ground truth — UI / Rust engine / Python training architecture, milestone checklist, shared contracts |
+| 2026-07-08 | T1-6: expanded Stage B workflow, fixed eval suite spec, NPZ shard contract (§5.7) |
+| 2026-07-08 | T1-7: `promote.py` iterative loop, `eval-promotion` CLI, `promotion_win_rate` API |

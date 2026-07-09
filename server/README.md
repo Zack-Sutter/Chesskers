@@ -17,10 +17,11 @@ npm test       # vitest
 | ------ | ------------------- | ----------------------------------- | ------------------------------------------- |
 | `GET`  | `/health`           | —                                   | `{ ok: true }`                              |
 | `POST` | `/games`            | —                                   | `{ gameId, initialState: SerializedBoard }` |
-| `POST` | `/games/:id/engine` | `{ engineColor, model?, thinkMs? }` | `{ engineColor, model, thinkMs }`           |
+| `POST` | `/games/:id/engine` | `{ engineColor, model?, thinkMs?, depth? }` | `{ engineColor, model, thinkMs, depth }`    |
 
 `POST /games/:id/engine` enables AI for a room. `engineColor` is `"w"` or `"b"`.
-`model` falls back to the `MODEL_PATH` env var; `thinkMs` defaults to `2000`.
+`model` falls back to the `MODEL_PATH` env var; `thinkMs` defaults to `2000`;
+`depth` defaults to `4`.
 
 ## WebSocket
 

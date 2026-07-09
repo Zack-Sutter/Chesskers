@@ -74,6 +74,13 @@ function seatColor(room: GameRoom, ws: WebSocket): TeamType | undefined {
   return undefined;
 }
 
+function humanSeatColor(room: GameRoom): TeamType {
+  if (!room.engine) return TeamType.OUR;
+  return room.engine.color === TeamType.OUR
+    ? TeamType.OPPONENT
+    : TeamType.OUR;
+}
+
 function assignSeat(
   room: GameRoom,
   ws: WebSocket,
@@ -87,6 +94,21 @@ function assignSeat(
     room.blackSocket = ws;
     return TeamType.OPPONENT;
   }
+
+  if (room.engine) {
+    const humanColor = humanSeatColor(room);
+    if (humanColor === TeamType.OUR) {
+      if (room.whiteSocket) return "rejected";
+      room.whiteToken = randomUUID();
+      room.whiteSocket = ws;
+      return TeamType.OUR;
+    }
+    if (room.blackSocket) return "rejected";
+    room.blackToken = randomUUID();
+    room.blackSocket = ws;
+    return TeamType.OPPONENT;
+  }
+
   if (!room.whiteSocket) {
     room.whiteToken = randomUUID();
     room.whiteSocket = ws;
@@ -237,43 +259,51 @@ export async function handleEngineMove(
     broadcast(room, err);
     return [err];
   }
-
-  const thinking = { type: "engineThinking" };
-  broadcast(room, thinking);
-  const out: ServerMessage[] = [thinking];
-
-  // ponytail: loop so a checkers multi-hop resolves within one engine turn.
-  // Cap iterations to avoid an infinite loop if the engine misbehaves.
-  for (let i = 0; i < 32; i++) {
-    let move: Move;
-    try {
-      move = await getMove(room.board, room.engine);
-    } catch (e) {
-      const err = {
-        type: "error",
-        message: `Engine failed: ${(e as Error).message}`,
-      };
-      broadcast(room, err);
-      return [...out, err];
-    }
-
-    const result = applyMove(room.board, move);
-    if (!result.ok) {
-      const err = { type: "error", message: "Engine produced an illegal move" };
-      broadcast(room, err);
-      return [...out, err];
-    }
-    room.board = result.board;
-
-    if (result.pendingPromotion) {
-      room.board = applyPromotion(room.board, result.pendingPromotion, "queen");
-    }
-
-    if (room.board.winningTeam !== undefined) break;
-    if (!isEngineTurn(room)) break;
+  if (room.engineBusy) {
+    return [];
   }
 
-  return [...out, ...broadcastState(room)];
+  room.engineBusy = true;
+  try {
+    const thinking = { type: "engineThinking" };
+    broadcast(room, thinking);
+    const out: ServerMessage[] = [thinking];
+
+    // ponytail: loop so a checkers multi-hop resolves within one engine turn.
+    // Cap iterations to avoid an infinite loop if the engine misbehaves.
+    for (let i = 0; i < 32; i++) {
+      let move: Move;
+      try {
+        move = await getMove(room.board, room.engine);
+      } catch (e) {
+        const err = {
+          type: "error",
+          message: `Engine failed: ${(e as Error).message}`,
+        };
+        broadcast(room, err);
+        return [...out, err];
+      }
+
+      const result = applyMove(room.board, move);
+      if (!result.ok) {
+        const err = { type: "error", message: "Engine produced an illegal move" };
+        broadcast(room, err);
+        return [...out, err];
+      }
+      room.board = result.board;
+
+      if (result.pendingPromotion) {
+        room.board = applyPromotion(room.board, result.pendingPromotion, "queen");
+      }
+
+      if (room.board.winningTeam !== undefined) break;
+      if (!isEngineTurn(room)) break;
+    }
+
+    return [...out, ...broadcastState(room)];
+  } finally {
+    room.engineBusy = false;
+  }
 }
 
 export function handleClientMessage(

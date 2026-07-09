@@ -29,3 +29,14 @@ piece_type_offset:
 planes:
   side_to_move: 14 # full 8x8 fill: 1.0 if white to move, 0.0 if black
   checkers_hop: 15 # 1.0 at checkersHopPosition square, 0.0 elsewhere
+
+# Policy head move-index layout (architecture §5.3). Implemented in
+# training/chesskers/move_index.py and engine/src/move_index.rs (parity-tested).
+# move_index = (from.y*8 + from.x)*64 + (to.y*8 + to.x) + promotion_offset
+move_index:
+  policy_size: 16384 # 4096 (from×to) × 4 promotion buckets
+  promotion_offset: # non-promotion moves use bucket 0 (same as queen)
+    queen: 0
+    rook: 4096
+    bishop: 8192
+    knight: 12288
