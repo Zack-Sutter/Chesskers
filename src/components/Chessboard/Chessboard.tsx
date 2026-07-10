@@ -8,6 +8,7 @@ interface Props {
   playMove: (piece: Piece, position: Position) => boolean;
   pieces: Piece[];
   hopContinuationPosition?: Position;
+  lastMove?: { from: Position; to: Position };
 }
 
 interface ResolvedTile {
@@ -59,6 +60,7 @@ export default function Chessboard({
   playMove,
   pieces,
   hopContinuationPosition,
+  lastMove,
 }: Props) {
   const [dragGhost, setDragGhost] = useState<DragGhost | null>(null);
   const [grabPosition, setGrabPosition] = useState<Position>(
@@ -198,6 +200,13 @@ export default function Chessboard({
     return isPlayArea;
   }
 
+  function isLastMoveSquare(logical: Position): boolean {
+    if (!lastMove) return false;
+    return (
+      lastMove.from.samePosition(logical) || lastMove.to.samePosition(logical)
+    );
+  }
+
   const tiles = [];
   for (let gridRow = 0; gridRow < WRAPPER_DIM; gridRow++) {
     for (let gridCol = 0; gridCol < WRAPPER_DIM; gridCol++) {
@@ -215,6 +224,8 @@ export default function Chessboard({
           image={image}
           number={number}
           highlight={isHighlighted(logical, isPlayArea)}
+          moveHighlight={isLastMoveSquare(logical)}
+          isPlayArea={isPlayArea}
         />
       );
     }

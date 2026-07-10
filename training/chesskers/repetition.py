@@ -17,13 +17,22 @@ def _piece_key(piece) -> str:
     )
 
 
+def side_to_move(board: Board) -> str:
+    hop = board.checkers_hop_position
+    if hop is not None:
+        piece = board.piece_at(hop)
+        if piece is not None:
+            return piece.team
+    return board.current_team()
+
+
 def position_key(board: Board) -> str:
     pieces = sorted(_piece_key(p) for p in board.pieces)
     hop = ""
     if board.checkers_hop_position is not None:
         hop = f"{board.checkers_hop_position[0]},{board.checkers_hop_position[1]}"
     return json.dumps(
-        {"pieces": pieces, "totalTurns": board.total_turns, "hop": hop},
+        {"pieces": pieces, "sideToMove": side_to_move(board), "hop": hop},
         separators=(",", ":"),
     )
 

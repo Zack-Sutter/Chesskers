@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::board::Board;
-use crate::state::PieceType;
+use crate::state::{PieceType, Team};
 
 fn piece_key(p: &crate::board::Piece) -> String {
     let en_passant = if p.piece_type == PieceType::Pawn && p.en_passant {
@@ -20,6 +20,19 @@ fn piece_key(p: &crate::board::Piece) -> String {
     )
 }
 
+fn side_to_move(board: &Board) -> Team {
+    if let Some(hop) = board.checkers_hop_position {
+        if let Some(p) = board.pieces.iter().find(|p| p.coord == hop) {
+            return p.team;
+        }
+    }
+    if board.total_turns % 2 == 1 {
+        Team::White
+    } else {
+        Team::Black
+    }
+}
+
 pub fn position_key(board: &Board) -> String {
     let mut pieces: Vec<String> = board.pieces.iter().map(piece_key).collect();
     pieces.sort();
@@ -27,9 +40,13 @@ pub fn position_key(board: &Board) -> String {
         .checkers_hop_position
         .map(|c| format!("{},{}", c.x, c.y))
         .unwrap_or_default();
+    let side = match side_to_move(board) {
+        Team::White => "w",
+        Team::Black => "b",
+    };
     serde_json::json!({
         "pieces": pieces,
-        "totalTurns": board.total_turns,
+        "sideToMove": side,
         "hop": hop,
     })
     .to_string()
@@ -77,6 +94,21 @@ mod tests {
             is_draw: false,
             position_counts: HashMap::new(),
         }
+    }
+
+    #[test]
+    fn same_key_when_total_turns_differs_but_side_matches() {
+        let piece = Piece {
+            coord: Coord { x: 4, y: 0 },
+            piece_type: PieceType::King,
+            team: Team::White,
+            has_moved: false,
+            en_passant: false,
+            possible_moves: Vec::new(),
+        };
+        let a = make_board(vec![piece.clone()], 1);
+        let b = make_board(vec![piece], 5);
+        assert_eq!(position_key(&a), position_key(&b));
     }
 
     #[test]

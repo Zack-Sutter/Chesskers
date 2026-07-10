@@ -19,6 +19,12 @@ def test_position_key_stable_across_piece_order():
     assert position_key(a) == position_key(b)
 
 
+def test_position_key_ignores_total_turns_when_side_matches():
+    a = _board([Piece(4, 0, "king", "w")], total_turns=1)
+    b = _board([Piece(4, 0, "king", "w")], total_turns=5)
+    assert position_key(a) == position_key(b)
+
+
 def test_declares_draw_on_third_identical_position():
     board = init_position_tracking(_board([Piece(4, 0, "king", "w")]))
     key = position_key(board)

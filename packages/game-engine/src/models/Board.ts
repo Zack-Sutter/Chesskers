@@ -46,7 +46,7 @@ export class Board {
 
   checkersHopPosition?: Position;
 
-
+  lastMove?: { from: Position; to: Position };
 
   constructor(pieces: Piece[], totalTurns: number) {
 
@@ -445,6 +445,13 @@ export class Board {
       : undefined;
 
     cloned.checkersHopPosition = this.checkersHopPosition?.clone();
+
+    if (this.lastMove) {
+      cloned.lastMove = {
+        from: this.lastMove.from.clone(),
+        to: this.lastMove.to.clone(),
+      };
+    }
 
     return cloned;
 

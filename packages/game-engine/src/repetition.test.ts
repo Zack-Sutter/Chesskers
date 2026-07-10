@@ -42,6 +42,18 @@ describe("positionKey", () => {
     expect(positionKey(a)).toBe(positionKey(b));
   });
 
+  it("ignores totalTurns when side to move matches", () => {
+    const a = makeBoard(
+      [new Piece(new Position(4, 0), PieceType.KING, TeamType.OUR, false)],
+      1
+    );
+    const b = makeBoard(
+      [new Piece(new Position(4, 0), PieceType.KING, TeamType.OUR, false)],
+      5
+    );
+    expect(positionKey(a)).toBe(positionKey(b));
+  });
+
   it("distinguishes hop lock from same pieces without hop", () => {
     const withoutHop = makeBoard(
       [new Piece(new Position(3, 6), PieceType.CHECKERS, TeamType.OPPONENT, false)],

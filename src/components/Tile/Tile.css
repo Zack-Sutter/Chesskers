@@ -62,3 +62,12 @@
 .tile-highlight.chess-piece-tile .chess-piece {
   z-index: 1;
 }
+
+.tile-last-move::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 2px #000;
+  pointer-events: none;
+  z-index: 3;
+}

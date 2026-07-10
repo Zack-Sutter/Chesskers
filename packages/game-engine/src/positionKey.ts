@@ -12,7 +12,7 @@ export function positionKey(board: Board): string {
   const hop = board.checkersHopPosition
     ? `${board.checkersHopPosition.x},${board.checkersHopPosition.y}`
     : "";
-  return JSON.stringify({ pieces, totalTurns: board.totalTurns, hop });
+  return JSON.stringify({ pieces, sideToMove: board.sideToMove, hop });
 }
 
 export function initPositionTracking(board: Board): Board {

@@ -212,6 +212,11 @@ export function applyMove(board: Board, move: Move): ApplyMoveResult {
 
   recordPosition(nextBoard);
 
+  nextBoard.lastMove = {
+    from: new Position(move.from.x, move.from.y),
+    to: destination.clone(),
+  };
+
   return {
     ok: true,
     board: nextBoard,

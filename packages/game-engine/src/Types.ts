@@ -27,6 +27,7 @@ export interface SerializedBoard {
     pieces: SerializedPiece[];
     totalTurns: number;
     checkersHopPosition?: { x: number; y: number };
+    lastMove?: { from: { x: number; y: number }; to: { x: number; y: number } };
     winningTeam?: TeamType;
     isDraw?: boolean;
 }

@@ -94,7 +94,7 @@ UI messages (`[Referee.tsx](../src/components/Referee/Referee.tsx)`):
 
 ### 2.3.1 Draw by repetition
 
-A game ends in a **draw** when the same board position occurs for the **third time** in that game (threefold repetition). Position identity includes all pieces (`x`, `y`, `type`, `team`, `hasMoved`, pawn `enPassant`), `totalTurns`, and `checkersHopPosition`. Win-by-capture still takes precedence if both occur on the same ply.
+A game ends in a **draw** when the same board position occurs for the **third time** in that game (threefold repetition). Position identity includes all pieces (`x`, `y`, `type`, `team`, `hasMoved`, pawn `enPassant`), side to move (`sideToMove`), and `checkersHopPosition`. Win-by-capture still takes precedence if both occur on the same ply.
 
 Implementation: `positionKey` / `recordPosition` in `[packages/game-engine/src/positionKey.ts](../packages/game-engine/src/positionKey.ts)` (mirrored in `engine/src/repetition.rs` and `training/chesskers/repetition.py`). Per-game occurrence counts live on the in-memory `Board` (`positionCounts`); only the terminal `isDraw` flag is on the wire.
 

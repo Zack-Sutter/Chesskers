@@ -333,6 +333,7 @@ export default function Referee({ room, onExit }: Props) {
             playMove={playMove}
             pieces={board.pieces}
             hopContinuationPosition={board.checkersHopPosition}
+            lastMove={board.lastMove}
           />
         ) : (
           <p style={{ color: "white", textAlign: "center" }}>

@@ -38,6 +38,12 @@ export function serializeBoard(board: Board): SerializedBoard {
       y: board.checkersHopPosition.y,
     };
   }
+  if (board.lastMove) {
+    serialized.lastMove = {
+      from: { x: board.lastMove.from.x, y: board.lastMove.from.y },
+      to: { x: board.lastMove.to.x, y: board.lastMove.to.y },
+    };
+  }
   if (board.winningTeam !== undefined) {
     serialized.winningTeam = board.winningTeam;
   }
@@ -57,6 +63,12 @@ export function deserializeBoard(data: SerializedBoard): Board {
       data.checkersHopPosition.x,
       data.checkersHopPosition.y
     );
+  }
+  if (data.lastMove) {
+    board.lastMove = {
+      from: new Position(data.lastMove.from.x, data.lastMove.from.y),
+      to: new Position(data.lastMove.to.x, data.lastMove.to.y),
+    };
   }
   if (data.winningTeam !== undefined) {
     board.winningTeam = data.winningTeam;
