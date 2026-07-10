@@ -3,6 +3,7 @@ import type { WebSocket } from "ws";
 import {
   applyMove,
   applyPromotion,
+  isTerminalBoard,
   serializeBoard,
   TeamType,
   type Board,
@@ -44,8 +45,10 @@ function broadcastState(room: GameRoom): ServerMessage[] {
   const state = { type: "state", board: serializeBoard(room.board) };
   out.push(state);
   broadcast(room, state);
-  if (room.board.winningTeam !== undefined) {
-    const over = { type: "gameOver", winner: room.board.winningTeam };
+  if (isTerminalBoard(room.board)) {
+    const over = room.board.isDraw
+      ? { type: "gameOver", draw: true }
+      : { type: "gameOver", winner: room.board.winningTeam };
     out.push(over);
     broadcast(room, over);
   }
@@ -55,7 +58,7 @@ function broadcastState(room: GameRoom): ServerMessage[] {
 function isEngineTurn(room: GameRoom): boolean {
   if (!room.engine) return false;
   const b = room.board;
-  if (b.winningTeam !== undefined) return false;
+  if (isTerminalBoard(b)) return false;
   if (b.checkersHopPosition) {
     const piece = b.pieces.find(
       (p) =>
@@ -286,7 +289,10 @@ export async function handleEngineMove(
 
       const result = applyMove(room.board, move);
       if (!result.ok) {
-        const err = { type: "error", message: "Engine produced an illegal move" };
+        const err = {
+          type: "error",
+          message: `Engine produced an illegal move: ${JSON.stringify(move)}`,
+        };
         broadcast(room, err);
         return [...out, err];
       }
@@ -296,7 +302,7 @@ export async function handleEngineMove(
         room.board = applyPromotion(room.board, result.pendingPromotion, "queen");
       }
 
-      if (room.board.winningTeam !== undefined) break;
+      if (isTerminalBoard(room.board)) break;
       if (!isEngineTurn(room)) break;
     }
 

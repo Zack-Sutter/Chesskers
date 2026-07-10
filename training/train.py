@@ -157,6 +157,20 @@ def train(
     return last_v, last_p
 
 
+def load_net_from_onnx(path: Path, num_planes: int, board_dim: int) -> PolicyValueNet:
+    """Load a dual-head ``v002+`` ONNX export into a ``PolicyValueNet``."""
+    import onnx
+    from onnx import numpy_helper
+
+    net = PolicyValueNet(num_planes, board_dim)
+    state = {
+        init.name: torch.from_numpy(numpy_helper.to_array(init).copy())
+        for init in onnx.load(str(path)).graph.initializer
+    }
+    net.load_state_dict(state, strict=True)
+    return net
+
+
 def export_onnx(net: nn.Module, num_planes: int, board_dim: int, out_path: Path) -> None:
     net.eval()
     out_path.parent.mkdir(parents=True, exist_ok=True)

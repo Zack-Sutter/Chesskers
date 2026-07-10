@@ -28,6 +28,7 @@ import numpy as np
 
 from chesskers import Board, apply_move, encode, move_index
 from chesskers.mcts import material_value, run_mcts
+from chesskers.repetition import init_position_tracking, is_terminal_board
 
 _FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures"
 _INITIAL_BOARD = _FIXTURE_DIR / "initial_board.json"
@@ -46,7 +47,7 @@ def _initial_board() -> Board:
     fixture = json.loads(_INITIAL_BOARD.read_text(encoding="utf-8"))
     board = Board.from_serialized(fixture["board"])
     board.calculate_all_moves()
-    return board
+    return init_position_tracking(board)
 
 
 def _outcomes(teams: list[str], winner: str | None) -> list[float]:
@@ -99,7 +100,7 @@ def play_game(rng: random.Random, max_moves: int, sims: int, c_puct: float,
     policies: list[list[tuple[int, float]]] = []
 
     for ply in range(max_moves):
-        if board.winning_team is not None:
+        if is_terminal_board(board):
             break
         _root_value, visits = run_mcts(board, sims, c_puct, rng, True, value_fn)
         if not visits:
@@ -115,7 +116,7 @@ def play_game(rng: random.Random, max_moves: int, sims: int, c_puct: float,
             raise RuntimeError(f"self-play produced an illegal move: {result}")
         board = result.board
 
-    return states, teams, policies, board.winning_team
+    return states, teams, policies, board.winning_team if not board.is_draw else None
 
 
 def generate_positions(rng: random.Random, num_positions: int, max_moves: int,

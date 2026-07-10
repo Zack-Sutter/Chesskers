@@ -15,6 +15,7 @@ function pieceKey(p: Piece): string {
 function expectBoardsEquivalent(a: Board, b: Board): void {
   expect(a.totalTurns).toBe(b.totalTurns);
   expect(a.winningTeam).toBe(b.winningTeam);
+  expect(a.isDraw).toBe(b.isDraw);
   if (a.checkersHopPosition === undefined) {
     expect(b.checkersHopPosition).toBeUndefined();
   } else {
@@ -102,6 +103,16 @@ describe("serializeBoard / deserializeBoard", () => {
     const restored = deserializeBoard(serializeBoard(board));
     expectBoardsEquivalent(board, restored);
     expect(restored.winningTeam).toBe(TeamType.OUR);
+  });
+
+  it("round-trips isDraw", () => {
+    const board = new Board(
+      [new Piece(new Position(4, 0), PieceType.KING, TeamType.OUR, false)],
+      1
+    );
+    board.isDraw = true;
+    const restored = deserializeBoard(serializeBoard(board));
+    expect(restored.isDraw).toBe(true);
   });
 
   it("is stable across serialize → deserialize → serialize", () => {

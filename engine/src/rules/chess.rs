@@ -11,13 +11,14 @@ fn ray_moves(
     pieces: &[Piece],
     deltas: &[(i32, i32)],
     clip: bool,
+    max_steps: i32,
 ) -> Vec<Coord> {
     let mut moves = Vec::new();
     let px = i32::from(piece.coord.x);
     let py = i32::from(piece.coord.y);
 
     for (dx, dy) in deltas {
-        for i in 1..8 {
+        for i in 1..=max_steps {
             let x = px + dx * i;
             let y = py + dy * i;
             if clip && !in_bounds(x, y) {
@@ -44,6 +45,7 @@ pub fn possible_rook_moves(rook: &Piece, pieces: &[Piece]) -> Vec<Coord> {
         pieces,
         &[(0, 1), (0, -1), (-1, 0), (1, 0)],
         true,
+        7,
     )
 }
 
@@ -53,6 +55,7 @@ pub fn possible_bishop_moves(bishop: &Piece, pieces: &[Piece]) -> Vec<Coord> {
         pieces,
         &[(1, 1), (1, -1), (-1, -1), (-1, 1)],
         true,
+        7,
     )
 }
 
@@ -71,6 +74,7 @@ pub fn possible_queen_moves(queen: &Piece, pieces: &[Piece]) -> Vec<Coord> {
             (-1, 1),
         ],
         true,
+        7,
     )
 }
 
@@ -89,6 +93,7 @@ pub fn possible_king_moves(king: &Piece, pieces: &[Piece]) -> Vec<Coord> {
             (-1, 1),
         ],
         true,
+        1,
     )
 }
 
@@ -144,4 +149,32 @@ pub fn possible_knight_moves(knight: &Piece, pieces: &[Piece]) -> Vec<Coord> {
     }
 
     moves
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::state::{PieceType, Team};
+
+    fn king_at(x: u8, y: u8) -> Piece {
+        Piece {
+            coord: Coord { x, y },
+            piece_type: PieceType::King,
+            team: Team::White,
+            has_moved: false,
+            en_passant: false,
+            possible_moves: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn king_moves_one_square_only() {
+        let king = king_at(7, 7);
+        let moves = possible_king_moves(&king, &[king.clone()]);
+        assert_eq!(moves.len(), 3);
+        assert!(moves.contains(&Coord { x: 7, y: 6 }));
+        assert!(moves.contains(&Coord { x: 6, y: 7 }));
+        assert!(moves.contains(&Coord { x: 6, y: 6 }));
+        assert!(!moves.contains(&Coord { x: 0, y: 0 }));
+    }
 }

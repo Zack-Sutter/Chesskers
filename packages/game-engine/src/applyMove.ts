@@ -2,6 +2,7 @@ import { Board } from "./models/Board";
 import { Pawn } from "./models/Pawn";
 import { Piece } from "./models/Piece";
 import { Position } from "./models/Position";
+import { recordPosition } from "./positionKey";
 import { getSingleJumpMoves, isCheckersJump } from "./rules";
 import {
   Move,
@@ -81,6 +82,7 @@ export function applyPromotion(
     choice
   );
   nextBoard.calculateAllMoves();
+  recordPosition(nextBoard);
   return nextBoard;
 }
 
@@ -207,6 +209,8 @@ export function applyMove(board: Board, move: Move): ApplyMoveResult {
     applyPromotionChoice(nextBoard, destination, move.promotion);
     nextBoard.calculateAllMoves();
   }
+
+  recordPosition(nextBoard);
 
   return {
     ok: true,

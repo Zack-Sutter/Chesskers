@@ -91,7 +91,7 @@ pub fn run_with_seed(command: &str, stdin: &str, seed: Option<u64>) -> Result<St
         "is-terminal" => {
             let board = board_from_json(stdin)?;
             serde_json::to_string(&TerminalResult {
-                terminal: board.winning_team.is_some(),
+                terminal: crate::repetition::is_terminal_board(&board),
                 winner: board.winning_team,
             })
             .map_err(|e| CliError {

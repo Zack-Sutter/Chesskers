@@ -31,7 +31,7 @@ from pathlib import Path
 
 from chesskers.encoder import _spec
 from self_play import _V001, generate_positions, write_shards
-from train import PolicyValueNet, export_onnx, train
+from train import export_onnx, load_net_from_onnx, train
 
 _TRAINING_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _TRAINING_DIR.parent
@@ -145,6 +145,7 @@ def train_candidate(
     shard_dir: Path,
     candidate: Path,
     *,
+    incumbent: Path,
     epochs: int,
     batch_size: int,
     lr: float,
@@ -158,7 +159,8 @@ def train_candidate(
     states, outcomes, policy_idx, policy_val = load_shards(shard_dir)
     print(f"train: {len(states)} positions from {shard_dir}")
 
-    net = PolicyValueNet(num_planes, board_dim)
+    net = load_net_from_onnx(incumbent, num_planes, board_dim)
+    print(f"init weights from {incumbent.name}")
     train(
         net, states, outcomes, policy_idx, policy_val,
         epochs, batch_size, lr, policy_weight, seed,
@@ -206,6 +208,7 @@ def promote_once(
             )
             train_candidate(
                 shard_dir, candidate,
+                incumbent=incumbent,
                 epochs=epochs, batch_size=batch_size, lr=lr,
                 policy_weight=policy_weight, seed=seed,
             )

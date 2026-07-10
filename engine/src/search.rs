@@ -4,6 +4,7 @@ use crate::apply::apply_move;
 use crate::board::Board;
 use crate::bot::PlayResult;
 use crate::evaluator::{EvalError, Evaluator};
+use crate::repetition::{init_position_tracking, is_terminal_board};
 use crate::state::{Move, PieceType, PromotionChoice, Team};
 use std::time::{Duration, Instant};
 
@@ -118,7 +119,7 @@ fn quiescence<E: Evaluator>(
     beta: f32,
     deadline: Option<Instant>,
 ) -> Result<f32, SearchError> {
-    if board.winning_team.is_some() {
+    if is_terminal_board(board) {
         return Ok(terminal_score(board));
     }
 
@@ -158,7 +159,7 @@ fn negamax<E: Evaluator>(
     beta: f32,
     deadline: Option<Instant>,
 ) -> Result<f32, SearchError> {
-    if board.winning_team.is_some() {
+    if is_terminal_board(board) {
         return Ok(terminal_score(board));
     }
 
@@ -326,9 +327,10 @@ pub fn play_search_vs_random<E: Evaluator>(
     let mut rng = Rng::new(random_seed);
     let mut moves_played = 0;
 
+    init_position_tracking(&mut board);
     board.calculate_all_moves();
 
-    while board.winning_team.is_none() {
+    while !is_terminal_board(&board) {
         if moves_played >= max_moves {
             // No draw detection (arch §11): a move-capped game is a draw, not an error.
             return Ok(PlayResult {
@@ -372,9 +374,10 @@ pub fn play_search_vs_random<E: Evaluator>(
 /// engine-vs-engine games differ per seed).
 pub(crate) fn random_opening(mut board: Board, plies: u32, seed: u64) -> Result<Board, String> {
     let mut rng = Rng::new(seed);
+    init_position_tracking(&mut board);
     board.calculate_all_moves();
     for _ in 0..plies {
-        if board.winning_team.is_some() || board.all_legal_moves().is_empty() {
+        if is_terminal_board(&board) || board.all_legal_moves().is_empty() {
             break;
         }
         let mv = pick_random_move(&board, &mut rng);
@@ -404,7 +407,7 @@ pub fn play_engine_vs_engine<W: Evaluator, B: Evaluator>(
     let mut board = random_opening(start, opening_plies, seed)?;
     let mut moves_played = 0;
 
-    while board.winning_team.is_none() {
+    while !is_terminal_board(&board) {
         if moves_played >= max_moves {
             return Ok(None);
         }

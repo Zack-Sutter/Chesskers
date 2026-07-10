@@ -28,6 +28,7 @@ export interface SerializedBoard {
     totalTurns: number;
     checkersHopPosition?: { x: number; y: number };
     winningTeam?: TeamType;
+    isDraw?: boolean;
 }
 
 export type PromotionChoice = "queen" | "rook" | "bishop" | "knight";

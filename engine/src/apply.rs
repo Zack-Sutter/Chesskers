@@ -1,4 +1,5 @@
 use crate::board::Board;
+use crate::repetition::record_position;
 use crate::rules::{is_checkers_jump, jumped_piece, possible_checkers_moves};
 use crate::state::{Coord, Move, PendingPromotion, PieceType, PromotionChoice, Team};
 
@@ -292,6 +293,8 @@ pub fn apply_move(board: &Board, mv: &Move) -> ApplyMoveResult {
             }
         }
     }
+
+    record_position(&mut next_board);
 
     ApplyMoveResult {
         ok: true,

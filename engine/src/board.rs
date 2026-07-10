@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::rules::{
     castling_moves, possible_bishop_moves, possible_checkers_moves, possible_king_moves,
     possible_knight_moves, possible_pawn_moves, possible_queen_moves, possible_rook_moves,
@@ -20,6 +22,9 @@ pub struct Board {
     pub total_turns: u32,
     pub winning_team: Option<Team>,
     pub checkers_hop_position: Option<Coord>,
+    pub is_draw: bool,
+  // ponytail: string-keyed HashMap per game; upgrade path is Zobrist + count vec
+    pub position_counts: HashMap<String, u32>,
 }
 
 impl From<SerializedPiece> for Piece {
@@ -45,6 +50,8 @@ impl Board {
             total_turns: board.total_turns,
             winning_team: board.winning_team,
             checkers_hop_position: board.checkers_hop_position,
+            is_draw: board.is_draw,
+            position_counts: HashMap::new(),
         }
     }
 
@@ -150,6 +157,7 @@ impl Board {
             total_turns: self.total_turns,
             checkers_hop_position: self.checkers_hop_position,
             winning_team: self.winning_team,
+            is_draw: self.is_draw,
         }
     }
 }
@@ -278,6 +286,7 @@ mod tests {
             total_turns: 1,
             checkers_hop_position: None,
             winning_team: None,
+            is_draw: false,
         });
         board.calculate_all_moves();
         assert_eq!(board.winning_team, Some(Team::Black));

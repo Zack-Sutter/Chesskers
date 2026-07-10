@@ -4,6 +4,7 @@ import {
   Position,
   TeamType,
   deserializeBoard,
+  isTerminalBoard,
   type PromotionChoice,
   type SerializedBoard,
 } from "game-engine";
@@ -34,6 +35,7 @@ interface ServerMessage {
   playerToken?: string;
   position?: { x: number; y: number };
   winner?: TeamType;
+  draw?: boolean;
   message?: string;
 }
 
@@ -53,13 +55,15 @@ export function useGameRoom(gameId: string, engineColor: TeamType): GameRoom {
     y: number;
   } | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const engineThinkingRef = useRef(false);
 
   useEffect(() => {
     const ws = new WebSocket(wsUrl());
     wsRef.current = ws;
 
     const requestEngineIfNeeded = (b: Board) => {
-      if (b.winningTeam === undefined && b.sideToMove === engineColor) {
+      if (engineThinkingRef.current) return;
+      if (!isTerminalBoard(b) && b.sideToMove === engineColor) {
         ws.send(JSON.stringify({ type: "requestEngineMove" }));
       }
     };
@@ -107,6 +111,7 @@ export function useGameRoom(gameId: string, engineColor: TeamType): GameRoom {
             const b = deserializeBoard(msg.board);
             setBoard(b);
             setEngineThinking(false);
+            engineThinkingRef.current = false;
             setPendingPromotion(null);
             requestEngineIfNeeded(b);
           }
@@ -116,6 +121,7 @@ export function useGameRoom(gameId: string, engineColor: TeamType): GameRoom {
           setPendingPromotion(msg.position ?? null);
           break;
         case "engineThinking":
+          engineThinkingRef.current = true;
           setEngineThinking(true);
           break;
         case "gameOver":
@@ -124,6 +130,7 @@ export function useGameRoom(gameId: string, engineColor: TeamType): GameRoom {
         case "error":
           setError(msg.message ?? "Unknown error");
           setEngineThinking(false);
+          engineThinkingRef.current = false;
           break;
       }
     };
@@ -142,6 +149,7 @@ export function useGameRoom(gameId: string, engineColor: TeamType): GameRoom {
     status === "playing" &&
     !engineThinking &&
     pendingPromotion === null &&
+    !isTerminalBoard(board) &&
     board.sideToMove === myColor;
 
   function sendMove(from: Position, to: Position): boolean {

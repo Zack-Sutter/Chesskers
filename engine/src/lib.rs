@@ -6,6 +6,7 @@ pub mod encoder;
 pub mod evaluator;
 pub mod mcts;
 pub mod move_index;
+pub mod repetition;
 pub mod rules;
 pub mod search;
 pub mod state;

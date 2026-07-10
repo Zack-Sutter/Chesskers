@@ -73,10 +73,12 @@ def _tile_is_empty_or_opponent(pos: Coord, pieces: list[Piece], team: str) -> bo
 
 # --- chess move generation -------------------------------------------------
 
-def _ray_moves(piece: Piece, pieces: list[Piece], deltas: list[Coord]) -> list[Coord]:
+def _ray_moves(
+    piece: Piece, pieces: list[Piece], deltas: list[Coord], *, max_steps: int = 7
+) -> list[Coord]:
     moves: list[Coord] = []
     for dx, dy in deltas:
-        for i in range(1, 8):
+        for i in range(1, max_steps + 1):
             x, y = piece.x + dx * i, piece.y + dy * i
             if not in_bounds(x, y):
                 break
@@ -109,7 +111,7 @@ def possible_queen_moves(queen: Piece, pieces: list[Piece]) -> list[Coord]:
 
 
 def possible_king_moves(king: Piece, pieces: list[Piece]) -> list[Coord]:
-    return _ray_moves(king, pieces, _QUEEN_DIRS)
+    return _ray_moves(king, pieces, _QUEEN_DIRS, max_steps=1)
 
 
 def possible_knight_moves(knight: Piece, pieces: list[Piece]) -> list[Coord]:
@@ -243,6 +245,8 @@ class Board:
     total_turns: int = 1
     winning_team: Optional[str] = None
     checkers_hop_position: Optional[Coord] = None
+    is_draw: bool = False
+    position_counts: dict[str, int] = field(default_factory=dict)
 
     @classmethod
     def from_serialized(cls, board: dict) -> "Board":
@@ -265,6 +269,7 @@ class Board:
             total_turns=board["totalTurns"],
             winning_team=board.get("winningTeam"),
             checkers_hop_position=(hop["x"], hop["y"]) if hop else None,
+            is_draw=bool(board.get("isDraw", False)),
         )
 
     def clone(self) -> "Board":
@@ -276,6 +281,8 @@ class Board:
             total_turns=self.total_turns,
             winning_team=self.winning_team,
             checkers_hop_position=self.checkers_hop_position,
+            is_draw=self.is_draw,
+            position_counts=dict(self.position_counts),
         )
 
     def current_team(self) -> str:
@@ -335,6 +342,8 @@ class Board:
             }
         if self.winning_team is not None:
             out["winningTeam"] = self.winning_team
+        if self.is_draw:
+            out["isDraw"] = True
         return out
 
 
@@ -520,6 +529,10 @@ def apply_move(board: Board, move: dict) -> ApplyMoveResult:
                     piece.has_moved = True
                     piece.en_passant = False
             next_board.calculate_all_moves()
+
+    from .repetition import record_position
+
+    record_position(next_board)
 
     return ApplyMoveResult(
         ok=True,

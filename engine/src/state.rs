@@ -55,6 +55,8 @@ pub struct SerializedBoard {
     pub checkers_hop_position: Option<Coord>,
     #[serde(rename = "winningTeam", default, skip_serializing_if = "Option::is_none")]
     pub winning_team: Option<Team>,
+    #[serde(rename = "isDraw", default, skip_serializing_if = "std::ops::Not::not")]
+    pub is_draw: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

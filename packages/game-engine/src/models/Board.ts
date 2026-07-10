@@ -40,6 +40,10 @@ export class Board {
 
   winningTeam?: TeamType;
 
+  isDraw?: boolean;
+
+  positionCounts?: Map<string, number>;
+
   checkersHopPosition?: Position;
 
 
@@ -433,6 +437,12 @@ export class Board {
     );
 
     cloned.winningTeam = this.winningTeam;
+
+    cloned.isDraw = this.isDraw;
+
+    cloned.positionCounts = this.positionCounts
+      ? new Map(this.positionCounts)
+      : undefined;
 
     cloned.checkersHopPosition = this.checkersHopPosition?.clone();
 

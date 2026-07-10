@@ -5,3 +5,4 @@ export * from "./models";
 export * from "./rules";
 export * from "./serialization";
 export * from "./applyMove";
+export * from "./positionKey";

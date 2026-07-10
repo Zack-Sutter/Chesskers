@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   applyMove,
+  applyPromotion,
   initialBoard,
+  initPositionTracking,
+  isTerminalBoard,
   Board,
   Piece,
   Position,
@@ -54,7 +57,7 @@ interface LocalGame extends GameSnapshot {
 
 function initialLocalGame(): LocalGame {
   return {
-    board: initialBoard.clone(),
+    board: initPositionTracking(initialBoard.clone()),
     promotion: null,
     past: [],
     future: [],
@@ -74,6 +77,7 @@ export default function Referee({ room, onExit }: Props) {
     count: number;
     turns: number;
     winner?: TeamType;
+    isDraw?: boolean;
   } | null>(null);
 
   const board = online ? room!.board : local.board;
@@ -84,7 +88,7 @@ export default function Referee({ room, onExit }: Props) {
       : null
     : local.promotion;
 
-  const gameOver = board?.winningTeam !== undefined;
+  const gameOver = board ? isTerminalBoard(board) : false;
 
   // Online mode is server-driven, so play sounds by diffing incoming boards.
   useEffect(() => {
@@ -92,9 +96,10 @@ export default function Referee({ room, onExit }: Props) {
     const count = board.pieces.length;
     const turns = board.totalTurns;
     const prev = soundStateRef.current;
-    soundStateRef.current = { count, turns, winner: board.winningTeam };
+    soundStateRef.current = { count, turns, winner: board.winningTeam, isDraw: board.isDraw };
     if (!prev) return;
-    if (board.winningTeam !== undefined && prev.winner === undefined) {
+    const wasTerminal = prev.winner !== undefined || prev.isDraw === true;
+    if (isTerminalBoard(board) && !wasTerminal) {
       checkmateSound.play();
     } else if (count < prev.count) {
       captureSound.play();
@@ -124,7 +129,7 @@ export default function Referee({ room, onExit }: Props) {
 
       played = true;
       isCapture = result.isCapture ?? false;
-      isGameOver = result.board.winningTeam !== undefined;
+      isGameOver = isTerminalBoard(result.board);
 
       let nextPromotion: PromotionTarget | null = null;
       if (result.pendingPromotion) {
@@ -183,17 +188,13 @@ export default function Referee({ room, onExit }: Props) {
     setLocal((previous) => {
       if (!previous.promotion) return previous;
 
-      const clonedBoard = previous.board.clone();
-      clonedBoard.pieces = clonedBoard.pieces.map((piece) =>
-        piece.position.x === previous.promotion!.x &&
-        piece.position.y === previous.promotion!.y
-          ? new Piece(piece.position.clone(), pieceType, piece.team, true)
-          : piece
-      );
-      clonedBoard.calculateAllMoves();
+      const choice = PROMOTION_CHOICE[pieceType];
+      if (!choice) return previous;
+
+      const nextBoard = applyPromotion(previous.board, previous.promotion, choice);
 
       return {
-        board: clonedBoard,
+        board: nextBoard,
         promotion: null,
         past: [
           ...previous.past,
@@ -255,8 +256,11 @@ export default function Referee({ room, onExit }: Props) {
   }
 
   function gameOverMessage(): string {
+    if (board?.isDraw) {
+      return "Draw — position repeated three times";
+    }
     if (board?.winningTeam === TeamType.OPPONENT) {
-      return "Black wins — white king jumped and burgled!";
+      return "Black wins — white king jumped!";
     }
     return "White wins — all black pieces captured!";
   }

@@ -3,6 +3,8 @@ import type { FastifyInstance } from "fastify";
 import type { WebSocket } from "ws";
 import {
   initialBoard,
+  initPositionTracking,
+  isTerminalBoard,
   serializeBoard,
   TeamType,
   type Board,
@@ -40,7 +42,7 @@ export async function registerRoutes(app: FastifyInstance) {
 
   app.post("/games", async () => {
     const gameId = randomUUID();
-    const board = initialBoard.clone();
+    const board = initPositionTracking(initialBoard.clone());
     const initialState = serializeBoard(board);
     rooms.set(gameId, { id: gameId, board, createdAt: Date.now() });
     return { gameId, initialState };

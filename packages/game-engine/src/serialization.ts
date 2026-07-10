@@ -41,6 +41,9 @@ export function serializeBoard(board: Board): SerializedBoard {
   if (board.winningTeam !== undefined) {
     serialized.winningTeam = board.winningTeam;
   }
+  if (board.isDraw === true) {
+    serialized.isDraw = true;
+  }
   return serialized;
 }
 
@@ -57,6 +60,9 @@ export function deserializeBoard(data: SerializedBoard): Board {
   }
   if (data.winningTeam !== undefined) {
     board.winningTeam = data.winningTeam;
+  }
+  if (data.isDraw === true) {
+    board.isDraw = true;
   }
   board.calculateAllMoves();
   return board;

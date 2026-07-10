@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import math
 
+from .repetition import is_terminal_board
 from .rules import BLACK, WHITE, apply_move
 
 _PROMOTIONS = ("queen", "rook", "bishop", "knight")
@@ -119,6 +120,10 @@ def _simulate(arena: list[_Node], root: int, c_puct: float, value_fn) -> None:
         path.append(idx)
         node = arena[idx]
 
+        if node.board.is_draw:
+            _backup(arena, path, 0.0, node.to_move)
+            return
+
         if node.winner is not None:
             _backup(arena, path, _terminal_value(node.winner, node.to_move), node.to_move)
             return
@@ -158,6 +163,8 @@ def run_mcts(board, simulations: int, c_puct: float, rng, root_noise: bool = Tru
 
     # Expand root up front so we can inject Dirichlet exploration noise.
     root.visits = 1
+    if is_terminal_board(board):
+        return value_fn(board), []
     moves = expand_moves(board)
     if not moves:
         return value_fn(board), []

@@ -90,8 +90,15 @@ UI messages (`[Referee.tsx](../src/components/Referee/Referee.tsx)`):
 
 - Black: `"Black wins — white king jumped and burgled!"`
 - White: `"White wins — all black pieces captured!"`
+- Draw: `"Draw — position repeated three times"`
 
-There is no stalemate or draw detection in the current implementation.
+### 2.3.1 Draw by repetition
+
+A game ends in a **draw** when the same board position occurs for the **third time** in that game (threefold repetition). Position identity includes all pieces (`x`, `y`, `type`, `team`, `hasMoved`, pawn `enPassant`), `totalTurns`, and `checkersHopPosition`. Win-by-capture still takes precedence if both occur on the same ply.
+
+Implementation: `positionKey` / `recordPosition` in `[packages/game-engine/src/positionKey.ts](../packages/game-engine/src/positionKey.ts)` (mirrored in `engine/src/repetition.rs` and `training/chesskers/repetition.py`). Per-game occurrence counts live on the in-memory `Board` (`positionCounts`); only the terminal `isDraw` flag is on the wire.
+
+There is no stalemate or other draw rule beyond repetition.
 
 ### 2.4 Checkers piece rules
 
@@ -259,6 +266,7 @@ interface SerializedBoard {
   totalTurns: number;
   checkersHopPosition?: { x: number; y: number };
   winningTeam?: "w" | "b";
+  isDraw?: boolean; // terminal draw (repetition); positionCounts are runtime-only
 }
 ```
 
@@ -792,7 +800,6 @@ Full deployment detail: [railway-vercel-migration.md §9](./railway-vercel-migra
 | ------------------------------- | ---------------------------------------- | ------------------------------------------- |
 | Model not on persistent volume  | Railway redeploy resets to default model | Mount volume or S3 fetch for `MODEL_PATH`   |
 | Rules duplicated in 3 languages | Drift risk                               | Fixtures CI gate on every PR                |
-| No draw detection               | Games run until terminal win             | Add repetition / move-limit rules if needed |
 | 16384-move policy space         | Sparse for early training                | Stage A value-only first; mask aggressively |
 
 ### Future upgrades (out of scope v1)

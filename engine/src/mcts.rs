@@ -12,6 +12,7 @@
 use crate::apply::apply_move;
 use crate::board::Board;
 use crate::evaluator::{EvalError, Evaluator};
+use crate::repetition::is_terminal_board;
 use crate::search::{expand_moves, random_opening, SearchError};
 use crate::state::{Move, Team};
 use std::time::Instant;
@@ -172,6 +173,12 @@ fn simulate<E: Evaluator>(
     loop {
         path.push(idx);
 
+        if arena[idx].board.is_draw {
+            let team = arena[idx].to_move;
+            backup(arena, &path, 0.0, team);
+            return Ok(());
+        }
+
         if let Some(winner) = arena[idx].winner {
             let team = arena[idx].to_move;
             backup(arena, &path, terminal_value(winner, team), team);
@@ -227,7 +234,7 @@ pub fn search_best_move_mcts<E: Evaluator>(
     config: &MctsConfig,
     deadline: Option<Instant>,
 ) -> Result<Move, SearchError> {
-    if board.winning_team.is_some() {
+    if is_terminal_board(board) {
         return Err(SearchError::NoLegalMoves);
     }
 
@@ -286,7 +293,7 @@ pub fn play_mcts_vs_mcts<W: Evaluator, B: Evaluator>(
     let mut board = random_opening(start, opening_plies, seed)?;
     let mut moves_played = 0;
 
-    while board.winning_team.is_none() {
+    while !is_terminal_board(&board) {
         if moves_played >= max_moves {
             return Ok(None);
         }
