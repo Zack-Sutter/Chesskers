@@ -8,6 +8,17 @@
     box-sizing: border-box;
     overflow: hidden;
     background-color: #202020;
+    background-image:
+        linear-gradient(rgba(32, 32, 32, 0.85), rgba(32, 32, 32, 0.85)),
+        url("/FordMcDill.png");
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+#app > * {
+    transform: translateX(15vw);
 }
 
 .board-viewport {
