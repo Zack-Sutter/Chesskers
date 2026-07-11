@@ -13,6 +13,7 @@ from .rules import (
     PendingPromotion,
     Piece,
     apply_move,
+    initial_board,
 )
 
 __all__ = [
@@ -22,6 +23,7 @@ __all__ = [
     "Piece",
     "POLICY_SIZE",
     "apply_move",
+    "initial_board",
     "encode",
     "encode_serialized",
     "init_position_tracking",

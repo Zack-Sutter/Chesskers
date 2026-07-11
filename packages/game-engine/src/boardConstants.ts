@@ -7,6 +7,12 @@ import { PieceType, TeamType } from "./Types";
 export const initialBoard: Board = new Board(
   [
     new Piece(
+      new Position(2, 6),
+      PieceType.CHECKERS,
+      TeamType.OPPONENT,
+      false
+    ),
+    new Piece(
       new Position(3, 6),
       PieceType.CHECKERS,
       TeamType.OPPONENT,
@@ -14,6 +20,12 @@ export const initialBoard: Board = new Board(
     ),
     new Piece(
       new Position(4, 6),
+      PieceType.CHECKERS,
+      TeamType.OPPONENT,
+      false
+    ),
+    new Piece(
+      new Position(5, 6),
       PieceType.CHECKERS,
       TeamType.OPPONENT,
       false

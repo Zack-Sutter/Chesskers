@@ -160,6 +160,52 @@ impl Board {
             is_draw: self.is_draw,
         }
     }
+
+    /// Starting position — mirrors `packages/game-engine/src/boardConstants.ts`.
+    pub fn initial() -> Self {
+        fn piece(x: u8, y: u8, piece_type: PieceType, team: Team) -> Piece {
+            Piece {
+                coord: Coord { x, y },
+                piece_type,
+                team,
+                has_moved: false,
+                en_passant: false,
+                possible_moves: Vec::new(),
+            }
+        }
+
+        let mut board = Self {
+            pieces: vec![
+                piece(2, 6, PieceType::Checkers, Team::Black),
+                piece(3, 6, PieceType::Checkers, Team::Black),
+                piece(4, 6, PieceType::Checkers, Team::Black),
+                piece(5, 6, PieceType::Checkers, Team::Black),
+                piece(0, 0, PieceType::Rook, Team::White),
+                piece(1, 0, PieceType::Knight, Team::White),
+                piece(2, 0, PieceType::Bishop, Team::White),
+                piece(3, 0, PieceType::Queen, Team::White),
+                piece(4, 0, PieceType::King, Team::White),
+                piece(5, 0, PieceType::Bishop, Team::White),
+                piece(6, 0, PieceType::Knight, Team::White),
+                piece(7, 0, PieceType::Rook, Team::White),
+                piece(0, 1, PieceType::Pawn, Team::White),
+                piece(1, 1, PieceType::Pawn, Team::White),
+                piece(2, 1, PieceType::Pawn, Team::White),
+                piece(3, 1, PieceType::Pawn, Team::White),
+                piece(4, 1, PieceType::Pawn, Team::White),
+                piece(5, 1, PieceType::Pawn, Team::White),
+                piece(6, 1, PieceType::Pawn, Team::White),
+                piece(7, 1, PieceType::Pawn, Team::White),
+            ],
+            total_turns: 1,
+            winning_team: None,
+            checkers_hop_position: None,
+            is_draw: false,
+            position_counts: HashMap::new(),
+        };
+        board.calculate_all_moves();
+        board
+    }
 }
 
 fn piece_valid_moves(piece: &Piece, board_state: &[Piece], hop: Option<Coord>) -> Vec<Coord> {
@@ -269,6 +315,25 @@ mod tests {
         for fixture in load_fixtures() {
             assert_fixture_rules(&fixture);
         }
+    }
+
+    #[test]
+    fn initial_board_matches_fixture() {
+        let fixture = load_fixtures()
+            .into_iter()
+            .find(|f| f.name == "initial_board")
+            .expect("initial_board fixture");
+        let board = Board::initial();
+        assert_eq!(board.pieces.len(), 20);
+        assert_eq!(
+            board
+                .pieces
+                .iter()
+                .filter(|p| p.piece_type == PieceType::Checkers)
+                .count(),
+            4
+        );
+        assert_eq!(board.to_serialized(), fixture.board);
     }
 
     #[test]

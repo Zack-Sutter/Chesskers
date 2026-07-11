@@ -347,6 +347,37 @@ class Board:
         return out
 
 
+def initial_board() -> Board:
+    """Starting position — mirrors ``packages/game-engine/src/boardConstants.ts``."""
+    board = Board(
+        pieces=[
+            Piece(2, 6, "checkers", BLACK),
+            Piece(3, 6, "checkers", BLACK),
+            Piece(4, 6, "checkers", BLACK),
+            Piece(5, 6, "checkers", BLACK),
+            Piece(0, 0, "rook", WHITE),
+            Piece(1, 0, "knight", WHITE),
+            Piece(2, 0, "bishop", WHITE),
+            Piece(3, 0, "queen", WHITE),
+            Piece(4, 0, "king", WHITE),
+            Piece(5, 0, "bishop", WHITE),
+            Piece(6, 0, "knight", WHITE),
+            Piece(7, 0, "rook", WHITE),
+            Piece(0, 1, "pawn", WHITE),
+            Piece(1, 1, "pawn", WHITE),
+            Piece(2, 1, "pawn", WHITE),
+            Piece(3, 1, "pawn", WHITE),
+            Piece(4, 1, "pawn", WHITE),
+            Piece(5, 1, "pawn", WHITE),
+            Piece(6, 1, "pawn", WHITE),
+            Piece(7, 1, "pawn", WHITE),
+        ],
+        total_turns=1,
+    )
+    board.calculate_all_moves()
+    return board
+
+
 def _piece_valid_moves(piece: Piece, pieces: list[Piece], hop: Optional[Coord]) -> list[Coord]:
     if piece.type == "pawn":
         return possible_pawn_moves(piece, pieces)

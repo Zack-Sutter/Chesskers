@@ -197,7 +197,7 @@ mod tests {
         assert_eq!(count_plane_ones(&tensor, 3), 2, "white knights");
         assert_eq!(count_plane_ones(&tensor, 4), 1, "white queen");
         assert_eq!(count_plane_ones(&tensor, 5), 1, "white king");
-        assert_eq!(count_plane_ones(&tensor, 13), 2, "black checkers");
+        assert_eq!(count_plane_ones(&tensor, 13), 4, "black checkers");
         assert_eq!(tensor[tensor_index(14, 0, 0)], 1.0, "white to move");
     }
 
@@ -237,7 +237,7 @@ mod tests {
             ("checkers_wrapped_step_left_edge", 0xe859ebaf46287325),
             ("declares_black_winner_when_white_king_hopped", 0xfc0ede8c89287325),
             ("declares_white_winner_when_no_black_pieces", 0xa936d00e0ba87325),
-            ("initial_board", 0xf832ddf3d9287325),
+            ("initial_board", 0x52fe4ddd45287325),
             ("pawn_reaches_back_rank_pending_promotion", 0xa1cd68d48ca87325),
             ("rejects_move_on_wrong_turn", 0x071f0a99afa87325),
         ];

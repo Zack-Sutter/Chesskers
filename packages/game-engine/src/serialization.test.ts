@@ -34,8 +34,10 @@ describe("serializeBoard / deserializeBoard", () => {
       schemaVersion: 1,
       totalTurns: 1,
       pieces: [
+        { x: 2, y: 6, type: "checkers", team: "b", hasMoved: false },
         { x: 3, y: 6, type: "checkers", team: "b", hasMoved: false },
         { x: 4, y: 6, type: "checkers", team: "b", hasMoved: false },
+        { x: 5, y: 6, type: "checkers", team: "b", hasMoved: false },
         { x: 0, y: 0, type: "rook", team: "w", hasMoved: false },
         { x: 1, y: 0, type: "knight", team: "w", hasMoved: false },
         { x: 2, y: 0, type: "bishop", team: "w", hasMoved: false },
