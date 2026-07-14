@@ -15,6 +15,8 @@ Shards are NPZ files with keys ``states`` (``float32 [N,16,8,8]``), ``outcomes``
 
 Usage:
     python self_play.py --positions 3000 --sims 64 --out shards/ --seed 42
+    python self_play.py --positions 3000 --side w --seed 42   # -> shards/white/
+    python self_play.py --positions 3000 --side b --seed 42   # -> shards/black/
 """
 
 from __future__ import annotations
@@ -33,6 +35,7 @@ from chesskers.repetition import init_position_tracking, is_terminal_board
 _FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures"
 _INITIAL_BOARD = _FIXTURE_DIR / "initial_board.json"
 _SHARD_DIR = Path(__file__).resolve().parent / "shards"
+_SIDE_DIRS = {"w": _SHARD_DIR / "white", "b": _SHARD_DIR / "black"}
 
 # Max sparse policy entries per position. Chesskers rarely exceeds ~40 legal
 # moves (white's full army); 128 leaves generous headroom, overflow is truncated
@@ -119,8 +122,15 @@ def play_game(rng: random.Random, max_moves: int, sims: int, c_puct: float,
     return states, teams, policies, board.winning_team if not board.is_draw else None
 
 
+def _shard_out_dir(side: str | None, out: Path | None) -> Path:
+    if out is not None:
+        return out
+    return _SIDE_DIRS[side] if side is not None else _SHARD_DIR
+
+
 def generate_positions(rng: random.Random, num_positions: int, max_moves: int,
-                       sims: int = 64, c_puct: float = 1.5, v001=None):
+                       sims: int = 64, c_puct: float = 1.5, v001=None,
+                       side: str | None = None):
     """Play games until at least ``num_positions`` are collected.
 
     With no ``v001`` model, MCTS uses the material leaf heuristic and value targets
@@ -128,6 +138,9 @@ def generate_positions(rng: random.Random, num_positions: int, max_moves: int,
     supplied, MCTS is guided by v001's value (higher-quality visit-count policy
     targets) and value targets are distilled from v001 — anchoring v002's value to
     v001's so the policy head is the net improvement measured by the T1-6 suite.
+
+    When ``side`` is ``"w"`` or ``"b"``, only positions with that side to move are
+    kept (v2 side-specific training — arch §14.3).
     """
     value_fn = v001.value if v001 is not None else material_value
     states: list[np.ndarray] = []
@@ -138,9 +151,12 @@ def generate_positions(rng: random.Random, num_positions: int, max_moves: int,
         game_states, game_teams, game_policies, winner = play_game(
             rng, max_moves, sims, c_puct, value_fn
         )
-        states.extend(game_states)
-        outcomes.extend(_outcomes(game_teams, winner))
-        policies.extend(game_policies)
+        for state, team, policy in zip(game_states, game_teams, game_policies):
+            if side is not None and team != side:
+                continue
+            states.append(state)
+            outcomes.append(_outcomes([team], winner)[0])
+            policies.append(policy)
         games += 1
 
     states_arr = np.asarray(states, dtype=np.float32)
@@ -222,8 +238,11 @@ def main() -> None:
     parser.add_argument("--c-puct", type=float, default=1.5, help="PUCT exploration constant")
     parser.add_argument("--shard-size", type=int, default=512, help="positions per NPZ shard")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--out", type=Path, default=_SHARD_DIR,
-                        help="output directory for NPZ shards")
+    parser.add_argument("--out", type=Path, default=None,
+                        help="output directory for NPZ shards (default: shards/, or "
+                             "shards/white|black/ when --side is set)")
+    parser.add_argument("--side", choices=["w", "b"], default=None,
+                        help="only keep positions where this side is to move")
     parser.add_argument("--distill", type=Path, default=None, metavar="V001_ONNX",
                         help="path to v001.onnx; guide MCTS with its value and distill it as the "
                              "value target (anchors v002 value to v001; requires onnxruntime)")
@@ -231,13 +250,16 @@ def main() -> None:
 
     v001 = _V001(args.distill) if args.distill else None
 
+    out_dir = _shard_out_dir(args.side, args.out)
     rng = random.Random(args.seed)
     states, values, policy_idx, policy_val, games = generate_positions(
-        rng, args.positions, args.max_moves, args.sims, args.c_puct, v001
+        rng, args.positions, args.max_moves, args.sims, args.c_puct, v001, args.side
     )
-    paths = write_shards(states, values, policy_idx, policy_val, args.out, args.shard_size)
+    paths = write_shards(states, values, policy_idx, policy_val, out_dir, args.shard_size)
 
-    print(f"{len(states)} positions from {games} games -> {len(paths)} shard(s) in {args.out}")
+    side_note = f" ({args.side} to move)" if args.side else ""
+    print(f"{len(states)} positions{side_note} from {games} games -> "
+          f"{len(paths)} shard(s) in {out_dir}")
     if v001 is not None:
         print(f"value targets: distilled from {args.distill} "
               f"(mean {values.mean():.3f}, range [{values.min():.3f}, {values.max():.3f}])")

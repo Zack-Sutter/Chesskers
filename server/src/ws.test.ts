@@ -1,16 +1,16 @@
 import { randomUUID } from "node:crypto";
 import { initialBoard, TeamType } from "game-engine";
 import { describe, expect, it } from "vitest";
-import type { EngineConfig, GameRoom } from "./routes.js";
+import type { GameRoom } from "./routes.js";
 import { handleJoin, handleMove } from "./ws.js";
 
 function mockSocket() {
   return { readyState: 1, send: () => {}, OPEN: 1 } as import("ws").WebSocket;
 }
 
-function makeRoom(engine?: EngineConfig): GameRoom {
+function makeRoom(engines?: GameRoom["engines"]): GameRoom {
   const board = initialBoard.clone();
-  return { id: randomUUID(), board, engine, createdAt: Date.now() };
+  return { id: randomUUID(), board, engines, createdAt: Date.now() };
 }
 
 describe("WebSocket move pipeline", () => {
@@ -54,10 +54,7 @@ describe("WebSocket move pipeline", () => {
 describe("engine-aware seat assignment", () => {
   it("assigns white when engine plays black", () => {
     const room = makeRoom({
-      color: TeamType.OPPONENT,
-      model: "m.onnx",
-      thinkMs: 2000,
-      depth: 4,
+      b: { model: "m.onnx", thinkMs: 2000, depth: 4 },
     });
     const ws = mockSocket();
     const messages = handleJoin(ws, room, room.id);
@@ -70,10 +67,7 @@ describe("engine-aware seat assignment", () => {
 
   it("assigns black when engine plays white", () => {
     const room = makeRoom({
-      color: TeamType.OUR,
-      model: "m.onnx",
-      thinkMs: 2000,
-      depth: 4,
+      w: { model: "m.onnx", thinkMs: 2000, depth: 4 },
     });
     const ws = mockSocket();
     const messages = handleJoin(ws, room, room.id);

@@ -40,11 +40,12 @@ interface ServerMessage {
 }
 
 /**
- * Connects to the game server for a vs-engine (or online) room. The human takes
- * a socket seat; the engine plays the other color via `requestEngineMove`, which
- * we fire automatically whenever the incoming state shows the engine to move.
+ * Connects to the game server for vs-engine or engine-vs-engine. The human takes
+ * a socket seat when playing one side; with both colors in `engineColors` the
+ * client spectates and auto-chains `requestEngineMove` whenever an engine moves.
  */
-export function useGameRoom(gameId: string, engineColor: TeamType): GameRoom {
+export function useGameRoom(gameId: string, engineColors: TeamType[]): GameRoom {
+  const isSpectator = engineColors.length > 1;
   const [board, setBoard] = useState<Board | null>(null);
   const [myColor, setMyColor] = useState<TeamType | null>(null);
   const [status, setStatus] = useState<RoomStatus>("connecting");
@@ -63,7 +64,7 @@ export function useGameRoom(gameId: string, engineColor: TeamType): GameRoom {
 
     const requestEngineIfNeeded = (b: Board) => {
       if (engineThinkingRef.current) return;
-      if (!isTerminalBoard(b) && b.sideToMove === engineColor) {
+      if (!isTerminalBoard(b) && engineColors.includes(b.sideToMove)) {
         ws.send(JSON.stringify({ type: "requestEngineMove" }));
       }
     };
@@ -141,9 +142,10 @@ export function useGameRoom(gameId: string, engineColor: TeamType): GameRoom {
     };
 
     return () => ws.close();
-  }, [gameId, engineColor]);
+  }, [gameId, engineColors]);
 
   const isMyTurn =
+    !isSpectator &&
     board !== null &&
     myColor !== null &&
     status === "playing" &&

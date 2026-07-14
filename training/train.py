@@ -33,6 +33,9 @@ from chesskers.move_index import POLICY_SIZE
 _TRAINING_DIR = Path(__file__).resolve().parent
 _SHARD_DIR = _TRAINING_DIR / "shards"
 _MODEL_OUT = _TRAINING_DIR / "models" / "v002.onnx"
+_SIDE_SHARDS = {"w": _SHARD_DIR / "white", "b": _SHARD_DIR / "black"}
+_SIDE_MODELS = {"w": _TRAINING_DIR / "models" / "w001.onnx", "b": _TRAINING_DIR / "models" / "b001.onnx"}
+_DEFAULT_INIT = _TRAINING_DIR.parent / "engine" / "models" / "v007.onnx"
 
 
 def load_shards(shard_dir: Path):
@@ -188,8 +191,14 @@ def export_onnx(net: nn.Module, num_planes: int, board_dim: int, out_path: Path)
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Chesskers policy+value CNN trainer (T1-6)")
-    parser.add_argument("--shards", type=Path, default=_SHARD_DIR)
-    parser.add_argument("--out", type=Path, default=_MODEL_OUT)
+    parser.add_argument("--shards", type=Path, default=None,
+                        help="NPZ shard directory (default: shards/, or shards/white|black/ with --side)")
+    parser.add_argument("--out", type=Path, default=None,
+                        help="output ONNX path (default: models/v002.onnx, or w001|b001 with --side)")
+    parser.add_argument("--side", choices=["w", "b"], default=None,
+                        help="v2 side-specific training: default shards + w001/b001 output")
+    parser.add_argument("--init", type=Path, default=None,
+                        help="initialize weights from an existing dual-head ONNX (default: v007 with --side)")
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--lr", type=float, default=1e-3)
@@ -197,22 +206,32 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
+    shard_dir = args.shards or (_SIDE_SHARDS[args.side] if args.side else _SHARD_DIR)
+    out_path = args.out or (_SIDE_MODELS[args.side] if args.side else _MODEL_OUT)
+    init_path = args.init
+    if init_path is None and args.side is not None:
+        init_path = _DEFAULT_INIT
+
     spec = _spec()
     num_planes, board_dim = spec["num_planes"], spec["board_dim"]
 
-    states, outcomes, policy_idx, policy_val = load_shards(args.shards)
-    print(f"loaded {len(states)} positions from {args.shards}")
+    states, outcomes, policy_idx, policy_val = load_shards(shard_dir)
+    print(f"loaded {len(states)} positions from {shard_dir}")
 
-    net = PolicyValueNet(num_planes, board_dim)
+    if init_path is not None:
+        net = load_net_from_onnx(init_path, num_planes, board_dim)
+        print(f"init weights from {init_path}")
+    else:
+        net = PolicyValueNet(num_planes, board_dim)
     train(
         net, states, outcomes, policy_idx, policy_val,
         args.epochs, args.batch_size, args.lr, args.policy_weight, args.seed,
     )
 
-    export_onnx(net, num_planes, board_dim, args.out)
-    print(f"exported ONNX -> {args.out}")
+    export_onnx(net, num_planes, board_dim, out_path)
+    print(f"exported ONNX -> {out_path}")
 
-    _verify(args.out, states[:1])
+    _verify(out_path, states[:1])
 
 
 def _verify(onnx_path: Path, sample_state: np.ndarray) -> None:

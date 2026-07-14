@@ -13,7 +13,13 @@ import random
 import numpy as np
 
 from chesskers.move_index import POLICY_SIZE
-from self_play import MAX_POLICY_ENTRIES, generate_positions, write_shards, _outcomes
+from self_play import (
+    MAX_POLICY_ENTRIES,
+    _outcomes,
+    _shard_out_dir,
+    generate_positions,
+    write_shards,
+)
 
 # Small sims keep the MCTS-driven tests fast while still exercising the tree.
 _SIMS = 16
@@ -56,6 +62,31 @@ def test_generation_is_deterministic() -> None:
     b = _gen(7, 80)
     for arr_a, arr_b in zip(a[:4], b[:4]):
         assert np.array_equal(arr_a, arr_b)
+
+
+def test_mixed_positions_include_both_sides() -> None:
+    states, *_ = _gen(5, 200)
+    side_plane = states[:, 14, 0, 0]
+    assert side_plane.min() == 0.0 and side_plane.max() == 1.0
+
+
+def test_side_filter_keeps_only_requested_side() -> None:
+    for side, expected in (("w", 1.0), ("b", 0.0)):
+        states, *_ = generate_positions(
+            random.Random(9), 40, max_moves=120, sims=_SIMS, side=side
+        )
+        assert len(states) >= 40
+        assert (states[:, 14, 0, 0] == expected).all()
+
+
+def test_shard_out_dir_side_defaults() -> None:
+    from self_play import _SHARD_DIR
+
+    assert _shard_out_dir(None, None) == _SHARD_DIR
+    assert _shard_out_dir("w", None) == _SHARD_DIR / "white"
+    assert _shard_out_dir("b", None) == _SHARD_DIR / "black"
+    custom = _SHARD_DIR / "custom"
+    assert _shard_out_dir("w", custom) == custom
 
 
 def test_shard_roundtrip(tmp_path) -> None:

@@ -48,6 +48,8 @@ pub struct EvalPromotionOptions {
     pub baseline: String,
     pub threshold: f64,
     pub fixtures_dir: String,
+    /// v2 per-side gate: challenger always plays this color (`w` or `b`).
+    pub side: Option<String>,
 }
 
 #[derive(Debug, Serialize, PartialEq)]
@@ -59,6 +61,8 @@ pub struct EvalPromotionResult {
     pub games: u32,
     pub threshold: f64,
     pub promoted: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub side: Option<String>,
 }
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -157,6 +161,8 @@ pub fn run_best_move(stdin: &str, options: &BestMoveOptions) -> Result<String, C
 }
 
 pub fn run_eval_promotion(options: &EvalPromotionOptions) -> Result<String, CliError> {
+    use crate::state::Team;
+
     let fixture_path = Path::new(&options.fixtures_dir).join("initial_board.json");
     let fixture_json = std::fs::read_to_string(&fixture_path).map_err(|e| CliError {
         error: format!("read {}: {e}", fixture_path.display()),
@@ -167,8 +173,22 @@ pub fn run_eval_promotion(options: &EvalPromotionOptions) -> Result<String, CliE
     let mut board = Board::from_serialized(&fixture.board);
     board.calculate_all_moves();
 
-    let config = PromotionSuiteConfig::default();
-    let games = config.seed_count * 2;
+    let challenger_side = match options.side.as_deref() {
+        None => None,
+        Some("w") => Some(Team::White),
+        Some("b") => Some(Team::Black),
+        Some(other) => {
+            return Err(CliError {
+                error: format!("invalid --side {other:?}; expected w or b"),
+            });
+        }
+    };
+
+    let mut config = PromotionSuiteConfig::default();
+    config.challenger_side = challenger_side;
+
+    let games_per_seed = if options.side.is_some() { 1 } else { 2 };
+    let games = config.seed_count * games_per_seed;
     let win_rate = promotion_win_rate(
         Path::new(&options.models_dir),
         &options.challenger,
@@ -185,6 +205,7 @@ pub fn run_eval_promotion(options: &EvalPromotionOptions) -> Result<String, CliE
         games,
         threshold: options.threshold,
         promoted: win_rate >= options.threshold,
+        side: options.side.clone(),
     })
     .map_err(|e| CliError {
         error: e.to_string(),

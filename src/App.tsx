@@ -8,18 +8,18 @@ import { useGameRoom } from "./hooks/useGameRoom";
 type View =
   | { mode: "lobby" }
   | { mode: "local" }
-  | { mode: "engine"; gameId: string; engineColor: TeamType };
+  | { mode: "engine"; gameId: string; engineColors: TeamType[] };
 
 function EngineGame({
   gameId,
-  engineColor,
+  engineColors,
   onExit,
 }: {
   gameId: string;
-  engineColor: TeamType;
+  engineColors: TeamType[];
   onExit: () => void;
 }) {
-  const room = useGameRoom(gameId, engineColor);
+  const room = useGameRoom(gameId, engineColors);
   return <Referee room={room} onExit={onExit} />;
 }
 
@@ -32,8 +32,8 @@ function App() {
       {view.mode === "lobby" && (
         <Lobby
           onPlayLocal={() => setView({ mode: "local" })}
-          onPlayEngine={(gameId, engineColor) =>
-            setView({ mode: "engine", gameId, engineColor })
+          onPlayEngine={(gameId, engineColors) =>
+            setView({ mode: "engine", gameId, engineColors })
           }
         />
       )}
@@ -41,7 +41,7 @@ function App() {
       {view.mode === "engine" && (
         <EngineGame
           gameId={view.gameId}
-          engineColor={view.engineColor}
+          engineColors={view.engineColors}
           onExit={backToLobby}
         />
       )}

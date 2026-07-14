@@ -1,20 +1,27 @@
-"""Iterative model promotion loop (T1-7, Stage C).
+"""Iterative model promotion loop (T1-7, Stage C; V2-T3 side-specific).
 
 Model naming
 ------------
-``vNNN.onnx`` — three-digit zero-padded version in ``training/models/`` and
-``engine/models/``:
+``vNNN.onnx`` — legacy unified model (v1):
 
 * ``v001`` — value-only (Stage A)
 * ``v002+`` — dual-head policy+value (Stage B onward)
 
-Each iteration distills from the incumbent net, trains candidate ``v(N+1)``, and
+``wNNN.onnx`` / ``bNNN.onnx`` — v2 side-specific models (arch §14.2):
+
+* ``w001+`` — white engine (chess-heavy training)
+* ``b001+`` — black engine (checkers-heavy training)
+
+Each iteration distills from the incumbent net, trains candidate ``(N+1)``, and
 promotes only when the fixed Rust MCTS-vs-MCTS suite (arch §9) scores ≥
-``PROMOTION_THRESHOLD`` (55%).
+``PROMOTION_THRESHOLD`` (55%). With ``--side w|b``, the gate runs 15 games with
+the challenger always playing that color (not color-balanced).
 
 Usage:
     python promote.py --incumbent models/v002.onnx
     python promote.py --incumbent models/v002.onnx --eval-only --candidate models/v003.onnx
+    python promote.py --side w --incumbent models/w001.onnx
+    python promote.py --side b --incumbent models/b001.onnx --eval-only --candidate models/b002.onnx
 """
 
 from __future__ import annotations
@@ -38,26 +45,52 @@ _REPO_ROOT = _TRAINING_DIR.parent
 _ENGINE_DIR = _REPO_ROOT / "engine"
 _DEFAULT_MODELS = _TRAINING_DIR / "models"
 _DEFAULT_SHARDS = _TRAINING_DIR / "shards" / "promote"
+_SIDE_PROMOTE_SHARDS = {
+    "w": _TRAINING_DIR / "shards" / "white" / "promote",
+    "b": _TRAINING_DIR / "shards" / "black" / "promote",
+}
 _ENGINE_MODELS = _ENGINE_DIR / "models"
 
 VERSION_RE = re.compile(r"^v(\d{3})\.onnx$", re.IGNORECASE)
+SIDE_VERSION_RE = re.compile(r"^([wb])(\d{3})\.onnx$", re.IGNORECASE)
 PROMOTION_THRESHOLD = 0.55
 
 
+@dataclass(frozen=True)
+class ModelId:
+    """Parsed ``vNNN`` or ``{w|b}NNN`` stem."""
+
+    side: str | None
+    number: int
+
+    @property
+    def stem(self) -> str:
+        return f"{self.side}{self.number:03d}" if self.side else f"v{self.number:03d}"
+
+
+def parse_model(path: Path) -> ModelId:
+    """Extract side prefix (if any) and version number from a model filename."""
+    name = path.name
+    match = SIDE_VERSION_RE.match(name)
+    if match:
+        return ModelId(side=match.group(1).lower(), number=int(match.group(2)))
+    match = VERSION_RE.match(name)
+    if match:
+        return ModelId(side=None, number=int(match.group(1)))
+    raise ValueError(f"expected vNNN.onnx or w|bNNN.onnx naming, got {name}")
+
+
 def parse_version(path: Path) -> int:
-    """Extract the numeric version from ``vNNN.onnx``."""
-    match = VERSION_RE.match(path.name)
-    if not match:
-        raise ValueError(f"expected vNNN.onnx naming, got {path.name}")
-    return int(match.group(1))
+    """Extract the numeric version from ``vNNN.onnx`` or ``{w|b}NNN.onnx``."""
+    return parse_model(path).number
 
 
-def version_stem(version: int) -> str:
-    return f"v{version:03d}"
+def version_stem(version: int, side: str | None = None) -> str:
+    return f"{side}{version:03d}" if side else f"v{version:03d}"
 
 
-def version_path(models_dir: Path, version: int) -> Path:
-    return models_dir / f"{version_stem(version)}.onnx"
+def version_path(models_dir: Path, version: int, side: str | None = None) -> Path:
+    return models_dir / f"{version_stem(version, side)}.onnx"
 
 
 @dataclass
@@ -71,8 +104,8 @@ class PromotionResult:
 def _stage_models(incumbent: Path, candidate: Path, engine_models: Path) -> tuple[str, str]:
     """Copy ONNX files into ``engine/models/`` under their version stems."""
     engine_models.mkdir(parents=True, exist_ok=True)
-    inc_stem = version_stem(parse_version(incumbent))
-    cand_stem = version_stem(parse_version(candidate))
+    inc_stem = parse_model(incumbent).stem
+    cand_stem = parse_model(candidate).stem
     shutil.copy2(incumbent, engine_models / f"{inc_stem}.onnx")
     shutil.copy2(candidate, engine_models / f"{cand_stem}.onnx")
     return cand_stem, inc_stem
@@ -82,6 +115,7 @@ def run_eval_suite(
     incumbent: Path,
     candidate: Path,
     *,
+    side: str | None = None,
     engine_dir: Path = _ENGINE_DIR,
     engine_models: Path = _ENGINE_MODELS,
     threshold: float = PROMOTION_THRESHOLD,
@@ -106,6 +140,8 @@ def run_eval_suite(
         "--threshold",
         str(threshold),
     ]
+    if side is not None:
+        cmd.extend(["--side", side])
     proc = subprocess.run(cmd, cwd=engine_dir, capture_output=True, text=True, check=False)
     if proc.returncode != 0:
         err = proc.stderr.strip() or proc.stdout.strip() or f"exit {proc.returncode}"
@@ -120,6 +156,7 @@ def generate_shards(
     incumbent: Path,
     shard_dir: Path,
     *,
+    side: str | None = None,
     positions: int,
     sims: int,
     c_puct: float,
@@ -132,11 +169,12 @@ def generate_shards(
     v001 = _V001(incumbent)
     rng = random.Random(seed)
     states, values, policy_idx, policy_val, games = generate_positions(
-        rng, positions, max_moves, sims, c_puct, v001
+        rng, positions, max_moves, sims, c_puct, v001, side
     )
     write_shards(states, values, policy_idx, policy_val, shard_dir, shard_size)
+    side_note = f" ({side} to move)" if side else ""
     print(
-        f"self-play: {len(states)} positions from {games} games -> {shard_dir} "
+        f"self-play: {len(states)} positions{side_note} from {games} games -> {shard_dir} "
         f"(distilled from {incumbent.name})"
     )
 
@@ -172,6 +210,7 @@ def train_candidate(
 def promote_once(
     incumbent: Path,
     *,
+    side: str | None = None,
     models_dir: Path = _DEFAULT_MODELS,
     shard_dir: Path = _DEFAULT_SHARDS,
     candidate: Path | None = None,
@@ -192,17 +231,25 @@ def promote_once(
     if not incumbent.is_file():
         raise FileNotFoundError(f"incumbent not found: {incumbent}")
 
-    next_ver = parse_version(incumbent) + 1
-    candidate = candidate or version_path(models_dir, next_ver)
+    model = parse_model(incumbent)
+    if side is not None and model.side is not None and model.side != side:
+        raise ValueError(
+            f"--side {side} conflicts with incumbent prefix {model.side} in {incumbent.name}"
+        )
+    side = side or model.side
+
+    next_ver = model.number + 1
+    candidate = candidate or version_path(models_dir, next_ver, side)
     models_dir.mkdir(parents=True, exist_ok=True)
 
     if eval_only and candidate is None:
-        candidate = version_path(models_dir, next_ver)
+        candidate = version_path(models_dir, next_ver, side)
 
     if not eval_only:
         if not skip_train:
             generate_shards(
                 incumbent, shard_dir,
+                side=side,
                 positions=positions, sims=sims, c_puct=c_puct,
                 max_moves=max_moves, shard_size=shard_size, seed=seed,
             )
@@ -215,9 +262,10 @@ def promote_once(
         elif not candidate.is_file():
             raise FileNotFoundError(f"--skip-train but candidate missing: {candidate}")
 
-    win_rate, promoted = run_eval_suite(incumbent, candidate, threshold=threshold)
+    win_rate, promoted = run_eval_suite(incumbent, candidate, side=side, threshold=threshold)
+    gate_note = f" as {side}" if side else ""
     print(
-        f"eval: {candidate.name} vs {incumbent.name} -> {win_rate * 100:.1f}% "
+        f"eval: {candidate.name} vs {incumbent.name}{gate_note} -> {win_rate * 100:.1f}% "
         f"(gate {threshold * 100:.0f}%): {'PROMOTED' if promoted else 'rejected'}"
     )
 
@@ -232,11 +280,14 @@ def promote_once(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Chesskers iterative model promotion (T1-7)")
     parser.add_argument("--incumbent", type=Path, required=True,
-                        help="current best model (e.g. models/v002.onnx)")
+                        help="current best model (e.g. models/v002.onnx or models/w001.onnx)")
+    parser.add_argument("--side", choices=["w", "b"], default=None,
+                        help="v2 side-specific loop: wNNN/bNNN naming + per-side eval gate")
     parser.add_argument("--candidate", type=Path, default=None,
-                        help="output path (default: models/vNNN.onnx where NNN = incumbent + 1)")
+                        help="output path (default: models/vNNN.onnx or w|bNNN with --side)")
     parser.add_argument("--models-dir", type=Path, default=_DEFAULT_MODELS)
-    parser.add_argument("--shards", type=Path, default=_DEFAULT_SHARDS)
+    parser.add_argument("--shards", type=Path, default=None,
+                        help="promotion shard dir (default: shards/promote or shards/{white,black}/promote)")
     parser.add_argument("--positions", type=int, default=5120)
     parser.add_argument("--sims", type=int, default=100)
     parser.add_argument("--c-puct", type=float, default=1.5)
@@ -260,13 +311,18 @@ def main() -> None:
     if not incumbent.is_absolute():
         incumbent = _TRAINING_DIR / incumbent
 
+    shard_dir = args.shards or (
+        _SIDE_PROMOTE_SHARDS[args.side] if args.side else _DEFAULT_SHARDS
+    )
+
     for attempt in range(1, args.iterations + 1):
         if args.iterations > 1:
             print(f"--- iteration {attempt}/{args.iterations} (incumbent {incumbent.name}) ---")
         result = promote_once(
             incumbent,
+            side=args.side,
             models_dir=args.models_dir,
-            shard_dir=args.shards,
+            shard_dir=shard_dir,
             candidate=args.candidate,
             positions=args.positions,
             sims=args.sims,

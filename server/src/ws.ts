@@ -10,7 +10,7 @@ import {
   type Move,
   type PromotionChoice,
 } from "game-engine";
-import type { EngineConfig, GameRoom } from "./routes.js";
+import type { EngineConfig, EngineSide, GameRoom } from "./routes.js";
 import { runBestMove } from "./engine.js";
 
 type ClientMessage =
@@ -55,20 +55,25 @@ function broadcastState(room: GameRoom): ServerMessage[] {
   return out;
 }
 
+function teamToSide(team: TeamType): EngineSide {
+  return team === TeamType.OUR ? "w" : "b";
+}
+
+function engineForSide(
+  room: GameRoom,
+  side: TeamType
+): EngineConfig | undefined {
+  return room.engines?.[teamToSide(side)];
+}
+
+function hasAnyEngine(room: GameRoom): boolean {
+  return !!(room.engines?.w || room.engines?.b);
+}
+
 function isEngineTurn(room: GameRoom): boolean {
-  if (!room.engine) return false;
-  const b = room.board;
-  if (isTerminalBoard(b)) return false;
-  if (b.checkersHopPosition) {
-    const piece = b.pieces.find(
-      (p) =>
-        p.position.x === b.checkersHopPosition!.x &&
-        p.position.y === b.checkersHopPosition!.y
-    );
-    return piece?.team === room.engine.color;
-  }
-  const toMove = b.totalTurns % 2 === 1 ? TeamType.OUR : TeamType.OPPONENT;
-  return toMove === room.engine.color;
+  if (!room.engines) return false;
+  if (isTerminalBoard(room.board)) return false;
+  return !!engineForSide(room, room.board.sideToMove);
 }
 
 function seatColor(room: GameRoom, ws: WebSocket): TeamType | undefined {
@@ -78,10 +83,12 @@ function seatColor(room: GameRoom, ws: WebSocket): TeamType | undefined {
 }
 
 function humanSeatColor(room: GameRoom): TeamType {
-  if (!room.engine) return TeamType.OUR;
-  return room.engine.color === TeamType.OUR
-    ? TeamType.OPPONENT
-    : TeamType.OUR;
+  const hasW = !!room.engines?.w;
+  const hasB = !!room.engines?.b;
+  if (!hasW && !hasB) return TeamType.OUR;
+  if (hasW && !hasB) return TeamType.OPPONENT;
+  if (!hasW && hasB) return TeamType.OUR;
+  return TeamType.OUR;
 }
 
 function assignSeat(
@@ -98,7 +105,7 @@ function assignSeat(
     return TeamType.OPPONENT;
   }
 
-  if (room.engine) {
+  if (hasAnyEngine(room)) {
     const humanColor = humanSeatColor(room);
     if (humanColor === TeamType.OUR) {
       if (room.whiteSocket) return "rejected";
@@ -252,7 +259,7 @@ export async function handleEngineMove(
   room: GameRoom,
   getMove: (board: Board, engine: EngineConfig) => Promise<Move> = runBestMove
 ): Promise<ServerMessage[]> {
-  if (!room.engine) {
+  if (!hasAnyEngine(room)) {
     const err = { type: "error", message: "Engine not enabled for this game" };
     broadcast(room, err);
     return [err];
@@ -275,9 +282,12 @@ export async function handleEngineMove(
     // ponytail: loop so a checkers multi-hop resolves within one engine turn.
     // Cap iterations to avoid an infinite loop if the engine misbehaves.
     for (let i = 0; i < 32; i++) {
+      const activeEngine = engineForSide(room, room.board.sideToMove);
+      if (!activeEngine) break;
+
       let move: Move;
       try {
-        move = await getMove(room.board, room.engine);
+        move = await getMove(room.board, activeEngine);
       } catch (e) {
         const err = {
           type: "error",

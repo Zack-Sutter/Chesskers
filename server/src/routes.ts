@@ -12,11 +12,12 @@ import {
 } from "game-engine";
 
 export interface EngineConfig {
-  color: TeamType;
   model: string;
   thinkMs: number;
   depth?: number;
 }
+
+export type EngineSide = "w" | "b";
 
 export interface GameRoom {
   id: string;
@@ -26,7 +27,7 @@ export interface GameRoom {
   whiteToken?: string;
   blackToken?: string;
   pendingPromotion?: PendingPromotion;
-  engine?: EngineConfig;
+  engines?: Partial<Record<EngineSide, EngineConfig>>;
   engineBusy?: boolean;
   createdAt: number;
 }
@@ -36,6 +37,71 @@ export const rooms = new Map<string, GameRoom>();
 
 const DEFAULT_THINK_MS = 2000;
 const DEFAULT_DEPTH = 4;
+
+export interface EngineSideInput {
+  model?: string;
+  thinkMs?: number;
+  depth?: number;
+}
+
+type EnginePostBody = {
+  engineColor?: string;
+  model?: string;
+  thinkMs?: number;
+  depth?: number;
+  white?: EngineSideInput;
+  black?: EngineSideInput;
+};
+
+function resolveThinkMs(thinkMs?: number): number | string {
+  const resolved = thinkMs ?? DEFAULT_THINK_MS;
+  if (!Number.isInteger(resolved) || resolved < 1) {
+    return "thinkMs must be a positive integer";
+  }
+  return resolved;
+}
+
+function resolveDepth(depth?: number): number | string {
+  const resolved = depth ?? DEFAULT_DEPTH;
+  if (!Number.isInteger(resolved) || resolved < 1) {
+    return "depth must be a positive integer";
+  }
+  return resolved;
+}
+
+function resolveModel(model: string | undefined, side: EngineSide): string | null {
+  if (model) return model;
+  if (side === "w") return process.env.WHITE_MODEL_PATH ?? null;
+  return process.env.BLACK_MODEL_PATH ?? process.env.MODEL_PATH ?? null;
+}
+
+function resolveEngineConfig(
+  input: EngineSideInput,
+  side: EngineSide
+): EngineConfig | { error: string } {
+  const thinkMs = resolveThinkMs(input.thinkMs);
+  if (typeof thinkMs === "string") return { error: thinkMs };
+  const depth = resolveDepth(input.depth);
+  if (typeof depth === "string") return { error: depth };
+  const model = resolveModel(input.model, side);
+  if (!model) {
+    return {
+      error:
+        side === "w"
+          ? "model required (body.model or WHITE_MODEL_PATH env)"
+          : "model required (body.model, BLACK_MODEL_PATH, or MODEL_PATH env)",
+    };
+  }
+  return { model, thinkMs, depth };
+}
+
+function isSideInput(value: unknown): value is EngineSideInput {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isDualEngineBody(body: EnginePostBody): boolean {
+  return body.white !== undefined || body.black !== undefined;
+}
 
 export async function registerRoutes(app: FastifyInstance) {
   app.get("/health", async () => ({ ok: true }));
@@ -50,44 +116,42 @@ export async function registerRoutes(app: FastifyInstance) {
 
   app.post<{
     Params: { id: string };
-    Body: { engineColor?: string; model?: string; thinkMs?: number; depth?: number };
+    Body: EnginePostBody;
   }>("/games/:id/engine", async (req, reply) => {
     const room = rooms.get(req.params.id);
     if (!room) return reply.code(404).send({ error: "Game not found" });
 
-    const { engineColor, model, thinkMs, depth } = req.body ?? {};
+    const body = req.body ?? {};
+
+    if (isDualEngineBody(body)) {
+      if (body.engineColor !== undefined) {
+        return reply
+          .code(400)
+          .send({ error: "use either engineColor or white/black, not both" });
+      }
+      if (!isSideInput(body.white) || !isSideInput(body.black)) {
+        return reply.code(400).send({ error: "white and black must be objects" });
+      }
+
+      const white = resolveEngineConfig(body.white, "w");
+      if ("error" in white) return reply.code(400).send({ error: white.error });
+      const black = resolveEngineConfig(body.black, "b");
+      if ("error" in black) return reply.code(400).send({ error: black.error });
+
+      room.engines = { w: white, b: black };
+      return { white, black };
+    }
+
+    const { engineColor, model, thinkMs, depth } = body;
     if (engineColor !== TeamType.OUR && engineColor !== TeamType.OPPONENT) {
       return reply.code(400).send({ error: "engineColor must be 'w' or 'b'" });
     }
 
-    const resolvedThinkMs = thinkMs ?? DEFAULT_THINK_MS;
-    if (!Number.isInteger(resolvedThinkMs) || resolvedThinkMs < 1) {
-      return reply.code(400).send({ error: "thinkMs must be a positive integer" });
-    }
+    const config = resolveEngineConfig({ model, thinkMs, depth }, engineColor);
+    if ("error" in config) return reply.code(400).send({ error: config.error });
 
-    const resolvedDepth = depth ?? DEFAULT_DEPTH;
-    if (!Number.isInteger(resolvedDepth) || resolvedDepth < 1) {
-      return reply.code(400).send({ error: "depth must be a positive integer" });
-    }
-
-    const resolvedModel = model ?? process.env.MODEL_PATH;
-    if (!resolvedModel) {
-      return reply
-        .code(400)
-        .send({ error: "model required (body.model or MODEL_PATH env)" });
-    }
-
-    room.engine = {
-      color: engineColor,
-      model: resolvedModel,
-      thinkMs: resolvedThinkMs,
-      depth: resolvedDepth,
-    };
-    return {
-      engineColor,
-      model: resolvedModel,
-      thinkMs: room.engine.thinkMs,
-      depth: room.engine.depth,
-    };
+    if (!room.engines) room.engines = {};
+    room.engines[engineColor] = config;
+    return { engineColor, ...config };
   });
 }

@@ -49,7 +49,7 @@ Rules documented here match the **current TypeScript implementation**. Rust and 
 
 ### 2.1 Initial setup
 
-Source: [`packages/game-engine/src/boardConstants.ts`](../packages/game-engine/src/boardConstants.ts)
+Source: `[packages/game-engine/src/boardConstants.ts](../packages/game-engine/src/boardConstants.ts)`
 
 | Side                                   | Pieces                         | Positions (v1)                   |
 | -------------------------------------- | ------------------------------ | -------------------------------- |
@@ -58,13 +58,13 @@ Source: [`packages/game-engine/src/boardConstants.ts`](../packages/game-engine/s
 
 There is no black chess army. Black's entire force is the two checkers (20 pieces total in v2 — see [§14.1](#141-rule-change--4-black-checkers)).
 
-Golden fixture: [`fixtures/initial_board.json`](../fixtures/initial_board.json) (`pieceCount: 20`).
+Golden fixture: `[fixtures/initial_board.json](../fixtures/initial_board.json)` (`pieceCount: 20`).
 
 `totalTurns` starts at **1**.
 
 ### 2.2 Turn model
 
-Turn and hop logic is enforced in [`packages/game-engine/src/applyMove.ts`](../packages/game-engine/src/applyMove.ts). The UI [`Referee.tsx`](../src/components/Referee/Referee.tsx) delegates to `applyMove`; the server does the same in [`server/src/ws.ts`](../server/src/ws.ts).
+Turn and hop logic is enforced in `[packages/game-engine/src/applyMove.ts](../packages/game-engine/src/applyMove.ts)`. The UI `[Referee.tsx](../src/components/Referee/Referee.tsx)` delegates to `applyMove`; the server does the same in `[server/src/ws.ts](../server/src/ws.ts)`.
 
 - White moves when `totalTurns % 2 === 1` (odd).
 - Black moves when `totalTurns % 2 === 0` (even).
@@ -76,7 +76,7 @@ Turn and hop logic is enforced in [`packages/game-engine/src/applyMove.ts`](../p
 
 ### 2.3 Win conditions
 
-Source: [`packages/game-engine/src/models/Board.ts`](../packages/game-engine/src/models/Board.ts) (`calculateAllMoves`)
+Source: `[packages/game-engine/src/models/Board.ts](../packages/game-engine/src/models/Board.ts)` (`calculateAllMoves`)
 
 ```typescript
 if (!this.pieces.some((p) => p.team === TeamType.OPPONENT)) {
@@ -108,12 +108,12 @@ There is no stalemate or other draw rule beyond repetition.
 
 ### 2.4 Checkers piece rules
 
-Source: [`packages/game-engine/src/rules/CheckersRules.ts`](../packages/game-engine/src/rules/CheckersRules.ts)
+Source: `[packages/game-engine/src/rules/CheckersRules.ts](../packages/game-engine/src/rules/CheckersRules.ts)`
 
 - **Step:** 1 square in any of 8 directions (king-like), to an empty square.
 - **Jump:** 2 squares in any of 8 directions over an **adjacent opponent piece** to an empty landing square; jumped piece is removed.
 - **Multi-hop:** mandatory continuation within the same turn when additional jumps exist (enforced via `checkersHopPosition`).
-- **Torus wrapping:** only checkers use `wrapCoord()` from [`packages/game-engine/src/models/Position.ts`](../packages/game-engine/src/models/Position.ts). Steps and jumps wrap at board edges.
+- **Torus wrapping:** only checkers use `wrapCoord()` from `[packages/game-engine/src/models/Position.ts](../packages/game-engine/src/models/Position.ts)`. Steps and jumps wrap at board edges.
 
 Wrapped-edge behavior is tested in `[packages/game-engine/src/Board.test.ts](../packages/game-engine/src/Board.test.ts)`:
 
@@ -123,7 +123,7 @@ Wrapped-edge behavior is tested in `[packages/game-engine/src/Board.test.ts](../
 
 ### 2.5 Chess piece rules
 
-Standard chess movement for pawns, knights, bishops, rooks, queen, king — including castling and en passant. Chess pieces **do not** wrap; moves outside 0–7 are invalid ([`packages/game-engine/src/rules/`](../packages/game-engine/src/rules/) per-piece modules).
+Standard chess movement for pawns, knights, bishops, rooks, queen, king — including castling and en passant. Chess pieces **do not** wrap; moves outside 0–7 are invalid (`[packages/game-engine/src/rules/](../packages/game-engine/src/rules/)` per-piece modules).
 
 Castling moves are appended in `Board.calculateAllMoves()` after per-piece move generation.
 
@@ -135,17 +135,17 @@ When a pawn reaches rank **7** (white) or rank **0** (black):
 - In online and vs-engine modes, server sets `pendingPromotion` and emits `promote_required`; further moves blocked until `promote` message received.
 - Promotion is **not** automatic — player (or engine policy) must choose piece type.
 
-Pawn `enPassant` flag lives on [`packages/game-engine/src/models/Pawn.ts`](../packages/game-engine/src/models/Pawn.ts) and must serialize.
+Pawn `enPassant` flag lives on `[packages/game-engine/src/models/Pawn.ts](../packages/game-engine/src/models/Pawn.ts)` and must serialize.
 
 ### 2.7 Logic split (implemented)
 
 Game logic is split across two layers; orchestration is **consolidated** in game-engine (M0-5):
 
-| Layer       | File                                                                                  | Responsibilities                                                                                   |
-| ----------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| **Board**   | [`packages/game-engine/src/models/Board.ts`](../packages/game-engine/src/models/Board.ts) | Move generation, `playMove()` (movement + captures), win detection, castling                     |
-| **applyMove** | [`packages/game-engine/src/applyMove.ts`](../packages/game-engine/src/applyMove.ts)   | Turn enforcement, en passant detection, checkers hop continuation, turn increment, promotion gate |
-| **Referee** | [`src/components/Referee/Referee.tsx`](../src/components/Referee/Referee.tsx)         | UI only: sound, promotion modal, undo/redo, local vs online wiring — **delegates** to `applyMove`  |
+| Layer         | File                                                                                      | Responsibilities                                                                                  |
+| ------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **Board**     | `[packages/game-engine/src/models/Board.ts](../packages/game-engine/src/models/Board.ts)` | Move generation, `playMove()` (movement + captures), win detection, castling                      |
+| **applyMove** | `[packages/game-engine/src/applyMove.ts](../packages/game-engine/src/applyMove.ts)`       | Turn enforcement, en passant detection, checkers hop continuation, turn increment, promotion gate |
+| **Referee**   | `[src/components/Referee/Referee.tsx](../src/components/Referee/Referee.tsx)`             | UI only: sound, promotion modal, undo/redo, local vs online wiring — **delegates** to `applyMove` |
 
 ```typescript
 applyMove(board: Board, move: Move): ApplyMoveResult
@@ -200,7 +200,7 @@ flowchart TB
   MCTS -.->|promotion gate| Ort
 ```
 
-**Play-time AI:** the server spawns `chesskers-engine best-move`, which runs **iterative-deepening alpha-beta** ([`engine/src/search.rs`](../engine/src/search.rs)) with ONNX leaf evaluation. **MCTS** ([`engine/src/mcts.rs`](../engine/src/mcts.rs)) is used for self-play shard generation and model promotion gates only — not for live `best-move` calls.
+**Play-time AI:** the server spawns `chesskers-engine best-move`, which runs **iterative-deepening alpha-beta** (`[engine/src/search.rs](../engine/src/search.rs)`) with ONNX leaf evaluation. **MCTS** (`[engine/src/mcts.rs](../engine/src/mcts.rs)`) is used for self-play shard generation and model promotion gates only — not for live `best-move` calls.
 
 ### Language assignments (locked)
 
@@ -216,13 +216,13 @@ flowchart TB
 
 **No runtime imports across language boundaries.** Shared artifacts only:
 
-| Artifact                           | Purpose                                    |
-| ---------------------------------- | ------------------------------------------ |
-| `fixtures/*.json`                  | Golden positions exported from Vitest      |
-| `SerializedBoard` JSON             | Wire format between UI, server, engine CLI |
+| Artifact                           | Purpose                                                                                                                       |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `fixtures/*.json`                  | Golden positions exported from Vitest                                                                                         |
+| `SerializedBoard` JSON             | Wire format between UI, server, engine CLI                                                                                    |
 | `training/shards/*.npz`            | Training data on disk (`states`, `outcomes`; Stage B+ adds `policy_idx`, `policy_val` — [§5.7](#57-npz-shard-format-stage-b)) |
-| `engine/models/*.onnx`             | Exported neural network weights            |
-| `training/configs/encoder_v1.yaml` | Tensor layout spec (created at T1-3)       |
+| `engine/models/*.onnx`             | Exported neural network weights                                                                                               |
+| `training/configs/encoder_v1.yaml` | Tensor layout spec (created at T1-3)                                                                                          |
 
 ---
 
@@ -274,27 +274,27 @@ chesskers/
 
 ### Canonical source files
 
-| Path | Role |
-| ---- | ---- |
-| [`packages/game-engine/src/boardConstants.ts`](../packages/game-engine/src/boardConstants.ts) | `initialBoard`, board setup |
-| [`packages/game-engine/src/models/Board.ts`](../packages/game-engine/src/models/Board.ts) | Core game state, move generation, `playMove` |
-| [`packages/game-engine/src/applyMove.ts`](../packages/game-engine/src/applyMove.ts) | Authoritative turn/hop/promotion orchestration |
-| [`packages/game-engine/src/rules/`](../packages/game-engine/src/rules/) | Per-piece move generation |
-| [`packages/game-engine/src/Types.ts`](../packages/game-engine/src/Types.ts) | `PieceType`, `TeamType`, `SerializedBoard`, `Move` |
-| [`packages/game-engine/src/serialization.ts`](../packages/game-engine/src/serialization.ts) | `serializeBoard` / `deserializeBoard` |
-| [`packages/game-engine/src/positionKey.ts`](../packages/game-engine/src/positionKey.ts) | Repetition / draw detection |
-| [`src/components/Referee/Referee.tsx`](../src/components/Referee/Referee.tsx) | UI orchestration (delegates rules) |
-| [`src/components/Lobby/Lobby.tsx`](../src/components/Lobby/Lobby.tsx) | Create game, enable engine |
-| [`src/hooks/useGameRoom.ts`](../src/hooks/useGameRoom.ts) | WebSocket client for online/engine |
-| [`server/src/routes.ts`](../server/src/routes.ts) | Game rooms, engine config |
-| [`server/src/ws.ts`](../server/src/ws.ts) | Move pipeline, engine move loop |
-| [`server/src/engine.ts`](../server/src/engine.ts) | Spawn Rust `best-move` child process |
-| [`engine/src/search.rs`](../engine/src/search.rs) | Play-time alpha-beta search |
-| [`engine/src/mcts.rs`](../engine/src/mcts.rs) | MCTS for training eval / promotion |
-| [`training/chesskers/rules.py`](../training/chesskers/rules.py) | Python rules mirror |
-| [`training/self_play.py`](../training/self_play.py) | NPZ shard writer |
-| [`training/promote.py`](../training/promote.py) | Iterative model promotion |
-| [`fixtures/`](../fixtures/) | Golden cross-language test cases |
+| Path                                                                                          | Role                                               |
+| --------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `[packages/game-engine/src/boardConstants.ts](../packages/game-engine/src/boardConstants.ts)` | `initialBoard`, board setup                        |
+| `[packages/game-engine/src/models/Board.ts](../packages/game-engine/src/models/Board.ts)`     | Core game state, move generation, `playMove`       |
+| `[packages/game-engine/src/applyMove.ts](../packages/game-engine/src/applyMove.ts)`           | Authoritative turn/hop/promotion orchestration     |
+| `[packages/game-engine/src/rules/](../packages/game-engine/src/rules/)`                       | Per-piece move generation                          |
+| `[packages/game-engine/src/Types.ts](../packages/game-engine/src/Types.ts)`                   | `PieceType`, `TeamType`, `SerializedBoard`, `Move` |
+| `[packages/game-engine/src/serialization.ts](../packages/game-engine/src/serialization.ts)`   | `serializeBoard` / `deserializeBoard`              |
+| `[packages/game-engine/src/positionKey.ts](../packages/game-engine/src/positionKey.ts)`       | Repetition / draw detection                        |
+| `[src/components/Referee/Referee.tsx](../src/components/Referee/Referee.tsx)`                 | UI orchestration (delegates rules)                 |
+| `[src/components/Lobby/Lobby.tsx](../src/components/Lobby/Lobby.tsx)`                         | Create game, enable engine                         |
+| `[src/hooks/useGameRoom.ts](../src/hooks/useGameRoom.ts)`                                     | WebSocket client for online/engine                 |
+| `[server/src/routes.ts](../server/src/routes.ts)`                                             | Game rooms, engine config                          |
+| `[server/src/ws.ts](../server/src/ws.ts)`                                                     | Move pipeline, engine move loop                    |
+| `[server/src/engine.ts](../server/src/engine.ts)`                                             | Spawn Rust `best-move` child process               |
+| `[engine/src/search.rs](../engine/src/search.rs)`                                             | Play-time alpha-beta search                        |
+| `[engine/src/mcts.rs](../engine/src/mcts.rs)`                                                 | MCTS for training eval / promotion                 |
+| `[training/chesskers/rules.py](../training/chesskers/rules.py)`                               | Python rules mirror                                |
+| `[training/self_play.py](../training/self_play.py)`                                           | NPZ shard writer                                   |
+| `[training/promote.py](../training/promote.py)`                                               | Iterative model promotion                          |
+| `[fixtures/](../fixtures/)`                                                                   | Golden cross-language test cases                   |
 
 ---
 
@@ -406,15 +406,25 @@ Full message tables: [railway-vercel-migration.md §5](./railway-vercel-migratio
 
 **REST endpoints:**
 
-| Method | Path                | Request body | Response |
-| ------ | ------------------- | ------------ | -------- |
-| `GET`  | `/health`           | —            | `{ ok: true }` |
-| `POST` | `/games`            | —            | `{ gameId, initialState: SerializedBoard }` |
-| `POST` | `/games/:id/engine` | `{ engineColor, model?, thinkMs?, depth? }` | `{ engineColor, model, thinkMs, depth }` |
+| Method | Path                | Request body                     | Response                                    |
+| ------ | ------------------- | -------------------------------- | ------------------------------------------- |
+| `GET`  | `/health`           | —                                | `{ ok: true }`                              |
+| `POST` | `/games`            | —                                | `{ gameId, initialState: SerializedBoard }` |
+| `POST` | `/games/:id/engine` | single-side or dual-side (below) | matching config echo                        |
 
-`POST /games/:id/engine` (v1): `engineColor` is `"w"` or `"b"`. `model` falls back to `MODEL_PATH` env; `thinkMs` defaults to `2000`; `depth` defaults to `4`. Sets a single `room.engine` config for that color. See [`server/src/routes.ts`](../server/src/routes.ts).
+`POST /games/:id/engine` — two body shapes ([§14.2](#142-dual-engine-architecture)):
 
-**v2 engine config** (planned — [§14.2](#142-dual-engine-architecture)): extend the same endpoint to accept `{ white: { model, thinkMs?, depth? }, black: { … } }` for engine-vs-engine, or keep single-side `{ engineColor, … }` for human-vs-AI.
+```typescript
+// Option A: single side (human vs AI)
+{ engineColor: "w" | "b", model?, thinkMs?, depth? }
+// → { engineColor, model, thinkMs, depth }
+
+// Option B: both sides (engine vs engine)
+{ white: { model, thinkMs?, depth? }, black: { model, thinkMs?, depth? } }
+// → { white: { model, thinkMs, depth }, black: { … } }
+```
+
+Per-side `model` falls back to `MODEL_PATH` env (`WHITE_MODEL_PATH` / `BLACK_MODEL_PATH` in V2-E4); `thinkMs` defaults to `2000`; `depth` defaults to `4`. Option A updates one entry in `room.engines`; option B replaces both. See `[server/src/routes.ts](../server/src/routes.ts)`.
 
 Server move pipeline detail: [railway-vercel-migration.md §7](./railway-vercel-migration.md#7-server-side-move-pipeline).
 
@@ -437,12 +447,12 @@ struct EvalResult {
 
 Written by `training/self_play.py`; consumed by `training/train.py`.
 
-| Key           | dtype     | shape           | Description                                                          |
-| ------------- | --------- | --------------- | -------------------------------------------------------------------- |
-| `states`      | `float32` | `[N, 16, 8, 8]` | encoder_v1 tensor per position ([§5.4](#54-nn-input-encoding-encoder_v1)) |
-| `outcomes`    | `float32` | `[N]`           | value target from side-to-move POV in `[-1, 1]`                      |
-| `policy_idx`  | `int32`   | `[N, K]`        | sparse move indices ([§5.3](#53-move-index-for-nn-policy-head)); `-1` pad |
-| `policy_val`  | `float32` | `[N, K]`        | normalized visit counts; `0` pad                                     |
+| Key          | dtype     | shape           | Description                                                               |
+| ------------ | --------- | --------------- | ------------------------------------------------------------------------- |
+| `states`     | `float32` | `[N, 16, 8, 8]` | encoder_v1 tensor per position ([§5.4](#54-nn-input-encoding-encoder_v1)) |
+| `outcomes`   | `float32` | `[N]`           | value target from side-to-move POV in `[-1, 1]`                           |
+| `policy_idx` | `int32`   | `[N, K]`        | sparse move indices ([§5.3](#53-move-index-for-nn-policy-head)); `-1` pad |
+| `policy_val` | `float32` | `[N, K]`        | normalized visit counts; `0` pad                                          |
 
 `K` = 128 (`MAX_POLICY_ENTRIES` in `self_play.py`). Stage A shards (T1-4) omit `policy_idx` / `policy_val`; the T1-6 trainer rejects them.
 
@@ -471,12 +481,14 @@ echo '{"schemaVersion":1,...}' | chesskers-engine play-random --seed 42
 chesskers-engine best-move --model engine/models/v007.onnx --think-ms 2000 --depth 4 < board.json
 # → {"move":{"from":{...},"to":{...},"promotion?":"queen"}}
 
-# Promotion gate: MCTS-vs-MCTS win rate (T1-7)
+# Promotion gate: MCTS-vs-MCTS win rate (T1-7; V2-T3 per-side)
 chesskers-engine eval-promotion --challenger v007 --baseline v006
 # → {"challenger":"v007","baseline":"v006","winRate":0.55,"games":30,"threshold":0.55,"promoted":true}
+chesskers-engine eval-promotion --challenger w002 --baseline w001 --side w
+# → {"challenger":"w002","baseline":"w001","winRate":0.55,"games":15,"threshold":0.55,"promoted":true,"side":"w"}
 ```
 
-The server **spawns the Rust `chesskers-engine best-move` binary as a child process** per engine move ([`server/src/engine.ts`](../server/src/engine.ts), [`server/README.md`](../server/README.md)). Node does not link the Rust crate directly (no native addon). Upgrade path: long-lived engine process or N-API addon.
+The server **spawns the Rust** `chesskers-engine best-move` **binary as a child process** per engine move (`[server/src/engine.ts](../server/src/engine.ts)`, `[server/README.md](../server/README.md)`). Node does not link the Rust crate directly (no native addon). Upgrade path: long-lived engine process or N-API addon.
 
 ---
 
@@ -710,78 +722,89 @@ Follow checklist in [railway-vercel-migration.md §12](./railway-vercel-migratio
 
 - [x] **V2-R1** — Update `initialBoard` to 4 checkers at `(2,6)`, `(3,6)`, `(4,6)`, `(5,6)`
   - **Prerequisites:** none (v1 complete)
-  - **Touch:** [`packages/game-engine/src/boardConstants.ts`](../packages/game-engine/src/boardConstants.ts)
+  - **Touch:** `[packages/game-engine/src/boardConstants.ts](../packages/game-engine/src/boardConstants.ts)`
   - **Done when:** `initialBoard` has 20 pieces; vitest passes
 
 - [x] **V2-R2** — Port initial board to Rust + Python mirrors
   - **Prerequisites:** V2-R1
-  - **Touch:** `engine/` initial state, [`training/chesskers/rules.py`](../training/chesskers/rules.py)
+  - **Touch:** `engine/` initial state, `[training/chesskers/rules.py](../training/chesskers/rules.py)`
   - **Done when:** `cargo test` and `pytest` initial-board assertions pass
 
 - [x] **V2-R3** — Regenerate `fixtures/initial_board.json` and golden export
   - **Prerequisites:** V2-R1
-  - **Touch:** [`fixtures/initial_board.json`](../fixtures/initial_board.json), [`goldenFixtures.ts`](../packages/game-engine/src/goldenFixtures.ts)
+  - **Touch:** `[fixtures/initial_board.json](../fixtures/initial_board.json)`, `[goldenFixtures.ts](../packages/game-engine/src/goldenFixtures.ts)`
   - **Done when:** `pieceCount: 20`; all three language ports load fixture
 
 - [x] **V2-R4** — Fix encoder golden test (black checkers plane count = 4)
   - **Prerequisites:** V2-R3
-  - **Touch:** [`engine/src/encoder.rs`](../engine/src/encoder.rs)
+  - **Touch:** `[engine/src/encoder.rs](../engine/src/encoder.rs)`
   - **Done when:** vitest + `cargo test` + `pytest` green on fixtures
 
 ---
 
 ### V2-E — Dual-engine server + wire protocol
 
-- [ ] **V2-E1** — Replace `room.engine` with `room.engines.{w,b}`
+- [x] **V2-E1** — Replace `room.engine` with `room.engines.{w,b}`
   - **Prerequisites:** S1-4
-  - **Touch:** [`server/src/routes.ts`](../server/src/routes.ts), `GameRoom` types
+  - **Touch:** `[server/src/routes.ts](../server/src/routes.ts)`, `GameRoom` types
   - **Done when:** room can hold independent white and black engine configs
 
-- [ ] **V2-E2** — Extend `POST /games/:id/engine` for single-side and dual-side config
+- [x] **V2-E2** — Extend `POST /games/:id/engine` for single-side and dual-side config
   - **Prerequisites:** V2-E1
-  - **Touch:** [`server/src/routes.ts`](../server/src/routes.ts), [§5.5](#55-ui--server-websocket-protocol)
+  - **Touch:** `[server/src/routes.ts](../server/src/routes.ts)`, [§5.5](#55-ui--server-websocket-protocol)
   - **Done when:** `{ engineColor, … }` and `{ white: {…}, black: {…} }` both work
 
-- [ ] **V2-E3** — Route engine moves by `sideToMove`
+- [x] **V2-E3** — Route engine moves by `sideToMove`
   - **Prerequisites:** V2-E1
-  - **Touch:** [`server/src/ws.ts`](../server/src/ws.ts) `isEngineTurn` / `handleEngineMove`
+  - **Touch:** `[server/src/ws.ts](../server/src/ws.ts)` `isEngineTurn` / `handleEngineMove`
   - **Done when:** correct model selected per ply; checkers multi-hop loop unchanged
 
-- [ ] **V2-E4** — Add `WHITE_MODEL_PATH` / `BLACK_MODEL_PATH` env vars
+- [x] **V2-E4** — Add `WHITE_MODEL_PATH` / `BLACK_MODEL_PATH` env vars
   - **Prerequisites:** V2-E2
-  - **Touch:** [`server/src/routes.ts`](../server/src/routes.ts), [§10](#10-deployment)
+  - **Touch:** `[server/src/routes.ts](../server/src/routes.ts)`, [§10](#10-deployment)
   - **Done when:** per-side defaults resolve; `MODEL_PATH` kept as migration fallback
 
-- [ ] **V2-E5** — UI for dual-engine and engine-vs-engine
+- [x] **V2-E5** — UI for dual-engine and engine-vs-engine
   - **Prerequisites:** V2-E2, V2-E3
-  - **Touch:** [`src/hooks/useGameRoom.ts`](../src/hooks/useGameRoom.ts), [`src/components/Lobby/Lobby.tsx`](../src/components/Lobby/Lobby.tsx)
+  - **Touch:** `[src/hooks/useGameRoom.ts](../src/hooks/useGameRoom.ts)`, `[src/components/Lobby/Lobby.tsx](../src/components/Lobby/Lobby.tsx)`
   - **Done when:** human-vs-AI (one engine) and engine-vs-engine (auto `requestEngineMove` both sides) work
 
-- [ ] **V2-E6** — Server tests for both-side routing
+- [x] **V2-E6** — Server tests for both-side routing
   - **Prerequisites:** V2-E3
-  - **Touch:** [`server/src/engine.test.ts`](../server/src/engine.test.ts)
+  - **Touch:** `[server/src/engine.test.ts](../server/src/engine.test.ts)`
   - **Done when:** tests cover white-only, black-only, and dual-engine room config
 
 ---
 
 ### V2-T — Side-specific training
 
-- [ ] **V2-T1** — Side-tagged shard writer (`--side w|b`)
+- [x] **V2-T1** — Side-tagged shard writer (`--side w|b`)
   - **Prerequisites:** V2-R4
-  - **Touch:** [`training/self_play.py`](../training/self_play.py)
+  - **Touch:** `[training/self_play.py](../training/self_play.py)`
   - **Done when:** shards land in `shards/white/` and `shards/black/` (or equivalent tagging)
 
-- [ ] **V2-T2** — Train inaugural `w001.onnx` and `b001.onnx`
+- [x] **V2-T2** — Train inaugural `w001.onnx` and `b001.onnx`
   - **Prerequisites:** V2-T1
-  - **Touch:** [`training/train.py`](../training/train.py), `engine/models/`
+  - **Touch:** `[training/train.py](../training/train.py)`, `engine/models/`
   - **Done when:** both models load in Rust; beat random on side-appropriate positions
 
-- [ ] **V2-T3** — Extend `promote.py` for `wNNN` / `bNNN` naming
+- [x] **V2-T3** — Extend `promote.py` for `wNNN` / `bNNN` naming
   - **Prerequisites:** V2-T2
-  - **Touch:** [`training/promote.py`](../training/promote.py), `engine` CLI `eval-promotion`
+  - **Touch:** `[training/promote.py](../training/promote.py)`, `engine` CLI `eval-promotion`
   - **Done when:** per-side promotion gate documented and scripted
+  - **Workflow:**
+    ```bash
+    cd training
+    # white engine loop (challenger always plays white; 15-game gate):
+    python promote.py --side w --incumbent models/w001.onnx
+    python promote.py --side w --incumbent models/w001.onnx --eval-only --candidate models/w002.onnx
+    # black engine loop (challenger always plays black):
+    python promote.py --side b --incumbent models/b001.onnx
+    ```
+  - **Naming:** `wNNN.onnx` / `bNNN.onnx` — three-digit zero-padded side-specific models. Promoted models copy to `engine/models/`. Legacy `vNNN.onnx` loop unchanged without `--side`.
+  - **Gate:** `eval-promotion --side w|b` fixes challenger color (15 seeds → 15 games). Without `--side`, color-balanced v1 gate (30 games) is unchanged.
 
-- [ ] **V2-T4** — Document asymmetric eval methodology
+- [x] **V2-T4** — Document asymmetric eval methodology
   - **Prerequisites:** V2-T3
   - **Touch:** [§9](#9-training-pipeline-offline), [§14.3](#143-training-implications)
   - **Done when:** white model eval from white-to-move positions; black from black-to-move
@@ -867,48 +890,79 @@ flowchart LR
 
 ### Stage B — Policy + value (T1-6)
 
-|             |                                                                                                                                                                                                 |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Entry**   | `v001.onnx` promoted (Stage A exit met)                                                                                                                                                         |
-| **Process** | v001-guided MCTS self-play (`--distill`) → sparse visit-count policy labels + v001-distilled value targets → train dual-head net → export `v002.onnx`                                           |
-| **Exit**    | `v002.onnx` beats `v001.onnx` ≥55% in the fixed MCTS-vs-MCTS suite below                                                                                                                      |
+|             |                                                                                                                                                       |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Entry**   | `v001.onnx` promoted (Stage A exit met)                                                                                                               |
+| **Process** | v001-guided MCTS self-play (`--distill`) → sparse visit-count policy labels + v001-distilled value targets → train dual-head net → export `v002.onnx` |
+| **Exit**    | `v002.onnx` beats `v001.onnx` ≥55% in the fixed MCTS-vs-MCTS suite below                                                                              |
 
 **Bootstrap rationale:** Self-play MCTS is leaf-guided by **v001's value** (not material heuristic) so policy targets are higher quality. Value targets are **distilled from v001** on every position — not terminal game outcomes — so v002's value head stays anchored to v001. The promotion gate then isolates the **policy head**: both models play via MCTS at equal sim budgets, but only v002 supplies trained PUCT priors (v001 is value-only and falls back to uniform priors).
 
 **Fixed MCTS-vs-MCTS evaluation suite** (gate for Stage B and T1-7 promotions; implemented in `engine/src/mcts.rs`):
 
-| Parameter        | Value                                                                 |
-| ---------------- | --------------------------------------------------------------------- |
-| Test             | `mcts::tests::v002_beats_v001` (diagnostic: `v002_diagnostic`)       |
-| Board            | `fixtures/initial_board.json`                                         |
-| Opening          | 6 random plies per game (`random_opening`)                            |
-| Move cap         | 120 plies; capped games score **0.5** (half win)                      |
-| MCTS sims/move   | 100 (both sides)                                                      |
-| Seeds            | 15 (`0..15`), each played as challenger white **and** black → 30 games |
-| Scoring          | win = 1.0, loss = 0.0, move-capped draw = 0.5                         |
-| Gate             | challenger win rate ≥ **55%**                                         |
+| Parameter      | Value                                                                  |
+| -------------- | ---------------------------------------------------------------------- |
+| Test           | `mcts::tests::v002_beats_v001` (diagnostic: `v002_diagnostic`)         |
+| Board          | `fixtures/initial_board.json`                                          |
+| Opening        | 6 random plies per game (`random_opening`)                             |
+| Move cap       | 120 plies; capped games score **0.5** (half win)                       |
+| MCTS sims/move | 100 (both sides)                                                       |
+| Seeds          | 15 (`0..15`), each played as challenger white **and** black → 30 games |
+| Scoring        | win = 1.0, loss = 0.0, move-capped draw = 0.5                          |
+| Gate           | challenger win rate ≥ **55%**                                          |
 
-At play time, **all** promoted models (`v002`–`v007`) use **alpha-beta** with ONNX leaf evaluation ([`engine/src/search.rs`](../engine/src/search.rs)). MCTS with policy priors is reserved for self-play and the promotion gate ([`engine/src/mcts.rs`](../engine/src/mcts.rs)).
+### Asymmetric evaluation (v2 side-specific models)
+
+v1 unified models (`vNNN`) are trained on mixed side-to-move positions and gated with the **color-balanced** suite above (challenger plays white on 15 seeds and black on 15 seeds → 30 games). v2 side-specific models (`wNNN`, `bNNN`) use **asymmetric** methodology at every eval boundary: each net is assessed only from positions where **that side is to move**.
+
+| Layer           | v1 (`vNNN`)                           | v2 (`wNNN` / `bNNN`)                                                                                                     |
+| --------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Training shards | mixed positions                       | `--side w` keeps only white-to-move; `--side b` only black-to-move (`[training/self_play.py](../training/self_play.py)`) |
+| Promotion gate  | 30 games (15 seeds × both colors)     | 15 games — challenger **always** plays its trained color (`[eval-promotion --side](../engine/src/cli.rs)`)               |
+| Smoke test      | `v001` beats random from either color | `w001` as white only; `b001` as black only (`[search.rs](../engine/src/search.rs)` `side_win_loss_draw`)                 |
+
+**Per-side MCTS-vs-MCTS gate** (Stage B+ for `wNNN` / `bNNN`; `[engine/src/mcts.rs](../engine/src/mcts.rs)`):
+
+| Parameter        | Value                                                                                                          |
+| ---------------- | -------------------------------------------------------------------------------------------------------------- |
+| CLI              | `chesskers-engine eval-promotion --challenger w002 --baseline w001 --side w`                                   |
+| Challenger color | fixed to trained side (`w` → white; `b` → black)                                                               |
+| Seeds            | 15 (`0..15`) → **15 games** (not 30)                                                                           |
+| Other params     | same as [v1 gate table](#stage-b--policy--value-t1-6) (100 sims, 6 opening plies, 120 move cap, 55% threshold) |
+
+**Rationale:** White and black field different piece sets and win conditions; a single net trained on mixed positions dilutes side-specific features. Filtering shards and gates to side-to-move positions keeps training labels and promotion metrics aligned with play-time routing (white engine on white's turn, black engine on black's turn — [§14.2](#142-dual-engine-architecture)).
+
+**Promotion loop:** `[training/promote.py --side w|b](../training/promote.py)` wires shard filtering, training, and the per-side gate into one command; see [V2-T3](#v2-t--side-specific-training).
+
+At play time, **all** promoted models (`v002`–`v007`, `w001+`, `b001+`) use **alpha-beta** with ONNX leaf evaluation (`[engine/src/search.rs](../engine/src/search.rs)`). MCTS with policy priors is reserved for self-play and the promotion gate (`[engine/src/mcts.rs](../engine/src/mcts.rs)`).
 
 ### Stage C — Iterative (T1-7)
 
-|             |                                                                                                                                          |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **Entry**   | Stage B complete                                                                                                                         |
-| **Process** | `self_play --distill vNNN.onnx` → `train.py` → candidate `vNNN+1.onnx` → [fixed eval suite](#stage-b--policy--value-t1-6) → promote if ≥55% |
-| **Exit**    | Documented repeatable loop; models in `engine/models/vNNN.onnx` (`v001`–`v007` promoted to date) |
+|             |                                                                                                                                                                       |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Entry**   | Stage B complete                                                                                                                                                      |
+| **Process** | `self_play --distill vNNN.onnx` → `train.py` → candidate `vNNN+1.onnx` → [fixed eval suite](#stage-b--policy--value-t1-6) → promote if ≥55%. v2: `promote.py --side w |
+| **Exit**    | Documented repeatable loop; models in `engine/models/vNNN.onnx` (`v001`–`v007` promoted to date) or `wNNN.onnx` / `bNNN.onnx`                                         |
 
 **Value target semantics:**
 
-| Stage   | Non-terminal value target                         | Terminal / move-capped              |
-| ------- | ------------------------------------------------- | ----------------------------------- |
-| A (T1-4)| eventual game outcome from side-to-move POV       | same (+1 / −1 / 0)                  |
-| B (T1-6)| v001 network evaluation (`--distill`; §5.4 POV)   | distilled v001 value on that position |
-| C (T1-7)| promoted model evaluation (iterative distillation)| same as Stage B pattern             |
+| Stage    | Non-terminal value target                          | Terminal / move-capped                |
+| -------- | -------------------------------------------------- | ------------------------------------- |
+| A (T1-4) | eventual game outcome from side-to-move POV        | same (+1 / −1 / 0)                    |
+| B (T1-6) | v001 network evaluation (`--distill`; §5.4 POV)    | distilled v001 value on that position |
+| C (T1-7) | promoted model evaluation (iterative distillation) | same as Stage B pattern               |
 
 Policy targets (Stage B+): root MCTS visit-count distribution over legal moves, stored sparsely as `(move_index, normalized_visits)` per [§5.7](#57-npz-shard-format-stage-b).
 
-**Model naming (v1):** `vNNN.onnx` — three-digit zero-padded unified models (`v001` value-only, `v002+` policy+value). Latest promoted: `v007.onnx`. v2 introduces side-prefixed models — see [§14.2](#142-dual-engine-architecture).
+**Model naming:**
+
+| Pattern     | Role                                                                                                                              |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `vNNN.onnx` | **Legacy** unified model (`v001` value-only, `v002+` policy+value). Latest promoted: `v007.onnx`. Color-balanced eval (30 games). |
+| `wNNN.onnx` | White-side model — trained and gated on **white-to-move** positions only                                                          |
+| `bNNN.onnx` | Black-side model — trained and gated on **black-to-move** positions only                                                          |
+
+See [§14.2](#142-dual-engine-architecture) for play-time routing and [asymmetric evaluation](#asymmetric-evaluation-v2-side-specific-models) for gate details.
 
 ---
 
@@ -922,15 +976,17 @@ Policy targets (Stage B+): root MCTS visit-count distribution over legal moves, 
 
 **Environment variables:**
 
-| Variable             | Where          | Purpose                                             |
-| -------------------- | -------------- | --------------------------------------------------- |
-| `VITE_API_URL`       | Vercel build   | Railway HTTP base                                   |
-| `VITE_WS_URL`        | Vercel build   | Railway WebSocket base                              |
-| `ENGINE_BINARY_PATH` | Railway / local server | Path to Rust `chesskers-engine` binary              |
-| `MODEL_PATH`         | Railway / local server | Default ONNX model when request omits `model` (e.g. `engine/models/v007.onnx`) |
-| `PORT`               | Railway server         | HTTP/WS listen port                                 |
+| Variable             | Where                  | Purpose                                                                                  |
+| -------------------- | ---------------------- | ---------------------------------------------------------------------------------------- |
+| `VITE_API_URL`       | Vercel build           | Railway HTTP base                                                                        |
+| `VITE_WS_URL`        | Vercel build           | Railway WebSocket base                                                                   |
+| `ENGINE_BINARY_PATH` | Railway / local server | Path to Rust `chesskers-engine` binary                                                   |
+| `WHITE_MODEL_PATH`   | Railway / local server | Default white ONNX when request omits `model` (e.g. `engine/models/w007.onnx`)           |
+| `BLACK_MODEL_PATH`   | Railway / local server | Default black ONNX when request omits `model` (e.g. `engine/models/b007.onnx`)           |
+| `MODEL_PATH`         | Railway / local server | Deprecated black fallback when `BLACK_MODEL_PATH` unset (e.g. `engine/models/v007.onnx`) |
+| `PORT`               | Railway server         | HTTP/WS listen port                                                                      |
 
-Local dev example: [`docs/toplay.md`](./toplay.md).
+Local dev example: `[docs/toplay.md](./toplay.md)`.
 
 Full deployment detail: [railway-vercel-migration.md §9](./railway-vercel-migration.md#9-deployment-split).
 
@@ -952,13 +1008,13 @@ Full deployment detail: [railway-vercel-migration.md §9](./railway-vercel-migra
 
 ### Engine / training
 
-| Limitation                      | Impact                                   | Upgrade path                                |
-| ------------------------------- | ---------------------------------------- | ------------------------------------------- |
-| Single engine per room          | One `room.engine` + one `MODEL_PATH`; no side-specific models | v2 dual engines — [§14.2](#142-dual-engine-architecture) |
-| Models trained on 2-checker setup | `v001`–`v007` expect v1 initial position | Retrain as `wNNN` / `bNNN` after v2 rules — [§14](#14-v2-roadmap--4-checkers--dual-engines) |
-| Model not on persistent volume  | Railway redeploy resets to default model | Mount volume or S3 fetch for `MODEL_PATH`   |
-| Rules duplicated in 3 languages | Drift risk                               | Fixtures CI gate on every PR                |
-| 16384-move policy space         | Sparse for early training                | Stage A value-only first; mask aggressively |
+| Limitation                        | Impact                                                        | Upgrade path                                                                                |
+| --------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Single engine per room            | One `room.engine` + one `MODEL_PATH`; no side-specific models | v2 dual engines — [§14.2](#142-dual-engine-architecture)                                    |
+| Models trained on 2-checker setup | `v001`–`v007` expect v1 initial position                      | Retrain as `wNNN` / `bNNN` after v2 rules — [§14](#14-v2-roadmap--4-checkers--dual-engines) |
+| Model not on persistent volume    | Railway redeploy resets to default model                      | Mount volume or S3 fetch for `MODEL_PATH`                                                   |
+| Rules duplicated in 3 languages   | Drift risk                                                    | Fixtures CI gate on every PR                                                                |
+| 16384-move policy space           | Sparse for early training                                     | Stage A value-only first; mask aggressively                                                 |
 
 ### Future upgrades (out of scope v1)
 
@@ -979,7 +1035,7 @@ Full deployment detail: [railway-vercel-migration.md §9](./railway-vercel-migra
 5. **Bump versions** if you break wire format (`schemaVersion`) or tensor layout (`encoder_v2`).
 6. **Check off the milestone** in [Section 7](#7-agent-milestone-checklist) when your PR merges.
 7. **Do not sync** `possibleMoves` **over the wire.** Both sides call `calculateAllMoves()` locally.
-8. **Use `applyMove`** from game-engine for all move application — server, UI, and tests; do not add a fourth copy of turn/hop logic.
+8. **Use** `applyMove` from game-engine for all move application — server, UI, and tests; do not add a fourth copy of turn/hop logic.
 9. **Promotion is two-step** in server/engine modes: move → `promote_required` → `promote`. Engine must handle pending promotion in search state.
 10. **Checkers torus wrapping** applies only to `PieceType.CHECKERS` — chess pieces clip at board edges.
 
@@ -987,19 +1043,19 @@ Full deployment detail: [railway-vercel-migration.md §9](./railway-vercel-migra
 
 ## 13. Glossary
 
-| Term                | Meaning                                                                                 |
-| ------------------- | --------------------------------------------------------------------------------------- |
-| **Chesskers**       | This project's hybrid chess/checkers game                                               |
-| **Hop lock**        | `checkersHopPosition` state during a multi-jump checkers turn                           |
-| **SerializedBoard** | Versioned JSON wire format for game state ([§5.1](#51-serializedboard-schemaversion-1)) |
-| **Side to move**    | White on odd `totalTurns`, black on even — unless hop lock active                       |
-| **Fixture**         | Golden JSON test case exported from Vitest ([§8](#8-fixture-format))                    |
-| **OUR / OPPONENT**  | TS enum names for white (`"w"`) and black (`"b"`)                                       |
-| **encoder_v1**      | 16-plane 8×8 tensor layout for NN input ([§5.4](#54-nn-input-encoding-encoder_v1))      |
-| **Shard**           | NPZ file of training positions written by self-play                                     |
-| **Promotion**       | Pawn reaching back rank; requires explicit piece-type choice                            |
-| **wNNN / bNNN**   | v2 side-specific ONNX models (white / black engine) — [§14.2](#142-dual-engine-architecture) |
-| **vNNN**          | v1 legacy unified model naming (`v001`–`v007`)                                         |
+| Term                | Meaning                                                                                      |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| **Chesskers**       | This project's hybrid chess/checkers game                                                    |
+| **Hop lock**        | `checkersHopPosition` state during a multi-jump checkers turn                                |
+| **SerializedBoard** | Versioned JSON wire format for game state ([§5.1](#51-serializedboard-schemaversion-1))      |
+| **Side to move**    | White on odd `totalTurns`, black on even — unless hop lock active                            |
+| **Fixture**         | Golden JSON test case exported from Vitest ([§8](#8-fixture-format))                         |
+| **OUR / OPPONENT**  | TS enum names for white (`"w"`) and black (`"b"`)                                            |
+| **encoder_v1**      | 16-plane 8×8 tensor layout for NN input ([§5.4](#54-nn-input-encoding-encoder_v1))           |
+| **Shard**           | NPZ file of training positions written by self-play                                          |
+| **Promotion**       | Pawn reaching back rank; requires explicit piece-type choice                                 |
+| **wNNN / bNNN**     | v2 side-specific ONNX models (white / black engine) — [§14.2](#142-dual-engine-architecture) |
+| **vNNN**            | v1 legacy unified model naming (`v001`–`v007`)                                               |
 
 ---
 
@@ -1009,26 +1065,26 @@ Next development phase after v1 milestone completion. Pick milestones from [V2-R
 
 ### 14.1 Rule change — 4 black checkers
 
-| Field               | v1 (current)                                     | v2 (target)                                      |
-| ------------------- | ------------------------------------------------ | ------------------------------------------------ |
-| Black pieces        | 2 checkers                                       | **4 checkers**                                   |
-| Positions           | `(3,6)`, `(4,6)`                                 | `(2,6)`, `(3,6)`, `(4,6)`, `(5,6)`               |
-| Piece types / rules | torus checkers                                   | **unchanged**                                    |
-| Win conditions      | white: capture all black; black: jump white king | **unchanged**                                    |
-| `schemaVersion`     | 1                                                | **stay 1** (piece count is data, not wire shape) |
+| Field               | v1 (current)                                     | v2 (target)                                                   |
+| ------------------- | ------------------------------------------------ | ------------------------------------------------------------- |
+| Black pieces        | 2 checkers                                       | **4 checkers**                                                |
+| Positions           | `(3,6)`, `(4,6)`                                 | `(2,6)`, `(3,6)`, `(4,6)`, `(5,6)`                            |
+| Piece types / rules | torus checkers                                   | **unchanged**                                                 |
+| Win conditions      | white: capture all black; black: jump white king | **unchanged**                                                 |
+| `schemaVersion`     | 1                                                | **stay 1** (piece count is data, not wire shape)              |
 | `encoder_v1`        | 16 planes                                        | **unchanged** (occupancy planes; no fixed piece-count planes) |
 
 **Touch points (all must agree):**
 
-- [`packages/game-engine/src/boardConstants.ts`](../packages/game-engine/src/boardConstants.ts)
+- `[packages/game-engine/src/boardConstants.ts](../packages/game-engine/src/boardConstants.ts)`
 - Rust initial board in `engine/`
-- [`training/chesskers/rules.py`](../training/chesskers/rules.py)
-- [`fixtures/initial_board.json`](../fixtures/initial_board.json) → `pieceCount: 20`
-- [`packages/game-engine/src/goldenFixtures.ts`](../packages/game-engine/src/goldenFixtures.ts)
-- [`engine/src/encoder.rs`](../engine/src/encoder.rs) — black checkers plane count test `4` (done in V2-R4)
+- `[training/chesskers/rules.py](../training/chesskers/rules.py)`
+- `[fixtures/initial_board.json](../fixtures/initial_board.json)` → `pieceCount: 20`
+- `[packages/game-engine/src/goldenFixtures.ts](../packages/game-engine/src/goldenFixtures.ts)`
+- `[engine/src/encoder.rs](../engine/src/encoder.rs)` — black checkers plane count test `4` (done in V2-R4)
 - Review tactical fixtures that assume a 2-checker start
 
-**Risk:** existing `v001`–`v007` models were trained on the 2-checker setup. Expect strength drop until `w*` / `b*` models are retrained on v2 positions.
+**Risk:** existing `v001`–`v007` models were trained on the 2-checker setup. Expect strength drop until `w`_ / `b`_ models are retrained on v2 positions.
 
 ### 14.2 Dual-engine architecture
 
@@ -1043,7 +1099,7 @@ flowchart LR
   PickModel --> CLI["chesskers-engine best-move"]
 ```
 
-**Server state (v2 target)** — replace single `room.engine` in [`server/src/routes.ts`](../server/src/routes.ts):
+**Server state (v2 target)** — replace single `room.engine` in `[server/src/routes.ts](../server/src/routes.ts)`:
 
 ```typescript
 interface GameRoom {
@@ -1054,7 +1110,7 @@ interface GameRoom {
 }
 ```
 
-**API (backward compatible extension of `POST /games/:id/engine`):**
+**API (backward compatible extension of** `POST /games/:id/engine`**):**
 
 ```typescript
 // Option A: single side (current v1 behavior)
@@ -1067,15 +1123,15 @@ interface GameRoom {
 }
 ```
 
-**Move routing:** `handleEngineMove` in [`server/src/ws.ts`](../server/src/ws.ts) picks `room.engines[board.sideToMove]`; if missing, that side is human-controlled. Checkers multi-hop loop (up to ~32 plies) unchanged.
+**Move routing:** `handleEngineMove` in `[server/src/ws.ts](../server/src/ws.ts)` picks `room.engines[board.sideToMove]`; if missing, that side is human-controlled. Checkers multi-hop loop (up to ~32 plies) unchanged.
 
 **Environment variables (v2):**
 
-| Variable           | Purpose                                                |
-| ------------------ | ------------------------------------------------------ |
-| `WHITE_MODEL_PATH` | Default white engine ONNX                              |
-| `BLACK_MODEL_PATH` | Default black engine ONNX                              |
-| `MODEL_PATH`       | Deprecated alias for black (remove after migration)    |
+| Variable           | Purpose                                             |
+| ------------------ | --------------------------------------------------- |
+| `WHITE_MODEL_PATH` | Default white engine ONNX                           |
+| `BLACK_MODEL_PATH` | Default black engine ONNX                           |
+| `MODEL_PATH`       | Deprecated alias for black (remove after migration) |
 
 **Model naming:**
 
@@ -1095,12 +1151,16 @@ interface GameRoom {
 
 ### 14.3 Training implications
 
-Current self-play ([`training/self_play.py`](../training/self_play.py)) trains one net from mixed positions. v2 needs:
+v1 self-play (`[training/self_play.py](../training/self_play.py)`) trains one net from mixed positions. v2 splits into two independent side-specific pipelines. Full gate spec: [§9 asymmetric evaluation](#asymmetric-evaluation-v2-side-specific-models).
 
-1. **Side-tagged shards** or separate dirs (`shards/white/`, `shards/black/`)
-2. **Asymmetric opponents:** e.g. white shards with black playing random or MCTS-with-`b` model; black shards with white random/heuristic
-3. **Separate promote loops:** `promote.py --side w` / `--side b` → `wNNN.onnx` / `bNNN.onnx`
-4. **Eval suites:** white model from white-to-move positions; black from black-to-move ([`engine/src/mcts.rs`](../engine/src/mcts.rs) or side-filtered fixtures)
+1. **Side-tagged shards** — `self_play.py --side w|b` writes to `shards/white/` or `shards/black/` and **drops** any position where the other side is to move. White models never see black-to-move training rows; black models never see white-to-move rows.
+2. **Asymmetric opponents** — each side's self-play games still involve both players, but only positions matching `--side` are recorded. Opponent can be random, material heuristic, or the other side's incumbent (`b` model when generating white shards, etc.).
+3. **Separate promote loops** — `promote.py --side w` / `--side b` → `wNNN.onnx` / `bNNN.onnx`; shards land in `shards/white/promote` or `shards/black/promote` by default.
+4. **Asymmetric eval suites** — promotion and smoke tests mirror the shard filter:
+
+- **White model (**`wNNN`**):** MCTS gate with `eval-promotion --side w` (challenger always white; 15 games). Beat-random smoke test plays `wNNN` only on white's turns (`w001_beats_random_as_white` in `[engine/src/search.rs](../engine/src/search.rs)`).
+- **Black model (**`bNNN`**):** MCTS gate with `eval-promotion --side b` (challenger always black; 15 games). Beat-random smoke test plays `bNNN` only on black's turns (`b001_beats_random_as_black`).
+- **Legacy** `vNNN`**:** without `--side`, the color-balanced v1 gate (30 games) is unchanged.
 
 `encoder_v1` and move-index ([§5.3](#53-move-index-for-nn-policy-head)) **do not** need a version bump for either v2 change.
 
@@ -1111,6 +1171,8 @@ Current self-play ([`training/self_play.py`](../training/self_play.py)) trains o
 | Date       | Change                                                                                                        |
 | ---------- | ------------------------------------------------------------------------------------------------------------- |
 | 2026-07-06 | Initial ground truth — UI / Rust engine / Python training architecture, milestone checklist, shared contracts |
-| 2026-07-08 | T1-6: expanded Stage B workflow, fixed eval suite spec, NPZ shard contract (§5.7) |
-| 2026-07-08 | T1-7: `promote.py` iterative loop, `eval-promotion` CLI, `promotion_win_rate` API |
-| 2026-07-11 | Sync doc with post-M0 monorepo; play-time alpha-beta; spawn decision; model lineage through v007; §14 v2 roadmap (4 checkers, dual engines); V2 milestone checklist. [`railway-vercel-migration.md`](./railway-vercel-migration.md) synced same date. |
+| 2026-07-08 | T1-6: expanded Stage B workflow, fixed eval suite spec, NPZ shard contract (§5.7)                             |
+| 2026-07-08 | T1-7: `promote.py` iterative loop, `eval-promotion` CLI, `promotion_win_rate` API                             |
+| 2026-07-11 | V2-T2: side-specific `--side w                                                                                |
+| 2026-07-11 | V2-T3: `promote.py --side w                                                                                   |
+| 2026-07-11 | V2-T4: asymmetric eval methodology — §9 gate tables + §14.3 shard/gate/smoke-test alignment for `wNNN`/`bNNN` |

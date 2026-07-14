@@ -324,10 +324,12 @@ pub const PROMOTION_WIN_THRESHOLD: f64 = 0.55;
 pub struct PromotionSuiteConfig {
     pub challenger_mcts: MctsConfig,
     pub baseline_mcts: MctsConfig,
-    /// Seeds `0..seed_count`, each played as challenger white and black.
+    /// Seeds `0..seed_count`, each played as challenger white and black (v1 gate).
     pub seed_count: u32,
     pub opening_plies: u32,
     pub max_moves: u32,
+    /// v2 per-side gate: challenger always plays this color (15 games, not 30).
+    pub challenger_side: Option<crate::state::Team>,
 }
 
 impl PromotionSuiteConfig {
@@ -343,6 +345,7 @@ impl PromotionSuiteConfig {
             seed_count: 15,
             opening_plies: 6,
             max_moves: 120,
+            challenger_side: None,
         }
     }
 }
@@ -365,10 +368,16 @@ pub fn promotion_win_rate(
 ) -> Result<f64, String> {
     use crate::evaluator::OnnxEvaluator;
 
+    let color_iters: &[bool] = match config.challenger_side {
+        Some(Team::White) => &[true],
+        Some(Team::Black) => &[false],
+        None => &[true, false],
+    };
+
     let mut score = 0.0f64;
     let mut games = 0.0f64;
     for seed in 0..config.seed_count {
-        for chal_white in [true, false] {
+        for &chal_white in color_iters {
             let mut chal_eval = OnnxEvaluator::from_file(models_dir.join(format!("{challenger}.onnx")))
                 .map_err(|e| e.to_string())?;
             let mut base_eval = OnnxEvaluator::from_file(models_dir.join(format!("{baseline}.onnx")))
@@ -498,6 +507,7 @@ mod tests {
             seed_count: (seeds.end - seeds.start) as u32,
             opening_plies,
             max_moves,
+            challenger_side: None,
         };
         promotion_win_rate(
             &models_dir(),

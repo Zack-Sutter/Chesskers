@@ -495,6 +495,39 @@ mod tests {
         OnnxEvaluator::from_file(path).unwrap()
     }
 
+    fn side_model_evaluator(stem: &str) -> OnnxEvaluator {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(format!("models/{stem}.onnx"));
+        OnnxEvaluator::from_file(path).unwrap()
+    }
+
+    fn side_win_loss_draw<E: Evaluator>(
+        evaluator: &mut E,
+        search_as: Team,
+        config: &SearchConfig,
+        games: u32,
+        max_moves: u32,
+    ) -> (u32, u32, u32) {
+        let (mut wins, mut losses, mut draws) = (0u32, 0u32, 0u32);
+        for seed in 0..games {
+            let board = initial_board();
+            let result = play_search_vs_random(
+                board,
+                evaluator,
+                search_as,
+                config,
+                (seed + 5000) as u64,
+                max_moves,
+            )
+            .unwrap_or_else(|e| panic!("seed {seed}: {e}"));
+            match result.winner {
+                Some(w) if w == search_as => wins += 1,
+                Some(_) => losses += 1,
+                None => draws += 1,
+            }
+        }
+        (wins, losses, draws)
+    }
+
     #[test]
     fn expand_moves_splits_pawn_promotion() {
         let board = load_board("pawn_reaches_back_rank_pending_promotion");
@@ -624,6 +657,50 @@ mod tests {
         let value = evaluator.evaluate(&initial_board()).unwrap().value;
         assert!(value.is_finite());
         assert!((-1.0..=1.0).contains(&value), "value {value} outside [-1, 1]");
+    }
+
+    #[test]
+    fn w001_onnx_loads_and_evaluates() {
+        let mut evaluator = side_model_evaluator("w001");
+        let value = evaluator.evaluate(&initial_board()).unwrap().value;
+        assert!(value.is_finite());
+        assert!((-1.0..=1.0).contains(&value), "value {value} outside [-1, 1]");
+    }
+
+    #[test]
+    fn b001_onnx_loads_and_evaluates() {
+        let mut evaluator = side_model_evaluator("b001");
+        let value = evaluator.evaluate(&initial_board()).unwrap().value;
+        assert!(value.is_finite());
+        assert!((-1.0..=1.0).contains(&value), "value {value} outside [-1, 1]");
+    }
+
+    #[test]
+    #[ignore = "slow: 10-game side-specific suite; run with --ignored --nocapture"]
+    fn w001_beats_random_as_white() {
+        let mut evaluator = side_model_evaluator("w001");
+        let config = SearchConfig { max_depth: 2 };
+        let (wins, losses, draws) = side_win_loss_draw(&mut evaluator, Team::White, &config, 10, 400);
+
+        eprintln!("w001.onnx depth 2 as white vs random: {wins} win / {losses} loss / {draws} draw (of 10)");
+        assert!(
+            wins >= 5,
+            "w001 should beat random as white; got {wins} win / {losses} loss / {draws} draw"
+        );
+    }
+
+    #[test]
+    #[ignore = "slow: 10-game side-specific suite; run with --ignored --nocapture"]
+    fn b001_beats_random_as_black() {
+        let mut evaluator = side_model_evaluator("b001");
+        let config = SearchConfig { max_depth: 2 };
+        let (wins, losses, draws) = side_win_loss_draw(&mut evaluator, Team::Black, &config, 10, 400);
+
+        eprintln!("b001.onnx depth 2 as black vs random: {wins} win / {losses} loss / {draws} draw (of 10)");
+        assert!(
+            wins >= 5,
+            "b001 should beat random as black; got {wins} win / {losses} loss / {draws} draw"
+        );
     }
 
     #[test]

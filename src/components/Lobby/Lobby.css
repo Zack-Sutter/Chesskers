@@ -64,7 +64,8 @@
   color: rgba(255, 255, 255, 0.9);
 }
 
-.lobby-field input[type="number"] {
+.lobby-field input[type="number"],
+.lobby-field input[type="text"] {
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
