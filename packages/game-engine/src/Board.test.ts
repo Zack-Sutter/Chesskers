@@ -157,10 +157,10 @@ describe("Board", () => {
     const board = initialBoard.clone();
     board.totalTurns = 2;
     expect(() => board.calculateAllMoves()).not.toThrow();
-    expect(board.pieces.filter((p) => p.isCheckers).length).toBe(2);
+    expect(board.pieces.filter((p) => p.isCheckers).length).toBe(3);
   });
 
-  it("declares white the winner when both checkers are captured", () => {
+  it("declares white the winner when all checkers are captured", () => {
     const board = new Board(
       [new Piece(new Position(4, 0), PieceType.KING, TeamType.OUR, false)],
       1
