@@ -32,7 +32,7 @@ GOLDEN_HASHES: dict[str, int] = {
     "checkers_wrapped_step_left_edge": 0xE859EBAF46287325,
     "declares_black_winner_when_white_king_hopped": 0xFC0EDE8C89287325,
     "declares_white_winner_when_no_black_pieces": 0xA936D00E0BA87325,
-    "initial_board": 0xF832DDF3D9287325,
+    "initial_board": 0x84DB03D610A87325,
     "pawn_reaches_back_rank_pending_promotion": 0xA1CD68D48CA87325,
     "rejects_move_on_wrong_turn": 0x071F0A99AFA87325,
 }

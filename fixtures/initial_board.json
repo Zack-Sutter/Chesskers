@@ -4,7 +4,7 @@
     "schemaVersion": 1,
     "pieces": [
       {
-        "x": 3,
+        "x": 2,
         "y": 6,
         "type": "checkers",
         "team": "b",
@@ -12,6 +12,13 @@
       },
       {
         "x": 4,
+        "y": 6,
+        "type": "checkers",
+        "team": "b",
+        "hasMoved": false
+      },
+      {
+        "x": 6,
         "y": 6,
         "type": "checkers",
         "team": "b",
@@ -133,6 +140,6 @@
     "totalTurns": 1
   },
   "expect": {
-    "pieceCount": 18
+    "pieceCount": 19
   }
 }

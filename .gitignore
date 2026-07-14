@@ -24,6 +24,11 @@ __pycache__/
 /training/shards
 /training/models
 
+# presentation (keep notebooks; ignore local env + marimo cache)
+/presentation/.venv
+/presentation/__marimo__
+/presentation/.marimo
+
 # misc
 .DS_Store
 .env.local
