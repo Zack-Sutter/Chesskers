@@ -35,9 +35,14 @@ describe("serializeBoard / deserializeBoard", () => {
       totalTurns: 1,
       pieces: [
         { x: 2, y: 6, type: "checkers", team: "b", hasMoved: false },
+<<<<<<< HEAD
         { x: 3, y: 6, type: "checkers", team: "b", hasMoved: false },
         { x: 4, y: 6, type: "checkers", team: "b", hasMoved: false },
         { x: 5, y: 6, type: "checkers", team: "b", hasMoved: false },
+=======
+        { x: 4, y: 6, type: "checkers", team: "b", hasMoved: false },
+        { x: 6, y: 6, type: "checkers", team: "b", hasMoved: false },
+>>>>>>> 4107f54961c92f1d1aa746e90f5023c5abf3f2ea
         { x: 0, y: 0, type: "rook", team: "w", hasMoved: false },
         { x: 1, y: 0, type: "knight", team: "w", hasMoved: false },
         { x: 2, y: 0, type: "bishop", team: "w", hasMoved: false },
@@ -77,17 +82,18 @@ describe("serializeBoard / deserializeBoard", () => {
       [
         new Pawn(new Position(4, 4), TeamType.OUR, true, true),
         new Piece(new Position(4, 0), PieceType.KING, TeamType.OUR, false),
-        new Piece(new Position(3, 6), PieceType.CHECKERS, TeamType.OPPONENT, false),
+        new Piece(new Position(2, 6), PieceType.CHECKERS, TeamType.OPPONENT, false),
         new Piece(new Position(4, 6), PieceType.CHECKERS, TeamType.OPPONENT, false),
+        new Piece(new Position(6, 6), PieceType.CHECKERS, TeamType.OPPONENT, false),
       ],
       5
     );
-    board.checkersHopPosition = new Position(3, 6);
+    board.checkersHopPosition = new Position(2, 6);
     board.calculateAllMoves();
 
     const data = serializeBoard(board);
     expect(data.pieces.find((p) => p.type === "pawn")?.enPassant).toBe(true);
-    expect(data.checkersHopPosition).toEqual({ x: 3, y: 6 });
+    expect(data.checkersHopPosition).toEqual({ x: 2, y: 6 });
 
     const restored = deserializeBoard(data);
     expectBoardsEquivalent(board, restored);

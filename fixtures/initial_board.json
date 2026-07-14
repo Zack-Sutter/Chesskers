@@ -5,6 +5,7 @@
     "pieces": [
       {
         "x": 2,
+<<<<<<< HEAD
         "y": 6,
         "type": "checkers",
         "team": "b",
@@ -12,6 +13,8 @@
       },
       {
         "x": 3,
+=======
+>>>>>>> 4107f54961c92f1d1aa746e90f5023c5abf3f2ea
         "y": 6,
         "type": "checkers",
         "team": "b",
@@ -25,7 +28,11 @@
         "hasMoved": false
       },
       {
+<<<<<<< HEAD
         "x": 5,
+=======
+        "x": 6,
+>>>>>>> 4107f54961c92f1d1aa746e90f5023c5abf3f2ea
         "y": 6,
         "type": "checkers",
         "team": "b",
@@ -147,6 +154,10 @@
     "totalTurns": 1
   },
   "expect": {
+<<<<<<< HEAD
     "pieceCount": 20
+=======
+    "pieceCount": 19
+>>>>>>> 4107f54961c92f1d1aa746e90f5023c5abf3f2ea
   }
 }

@@ -13,7 +13,7 @@
 
 ### What is Chesskers?
 
-Chesskers is a chess/checkers hybrid played on an 8×8 board. White fields a standard chess army; black fields two checkers pieces with torus-wrapping movement. Win conditions are asymmetric — not standard chess checkmate.
+Chesskers is a chess/checkers hybrid played on an 8×8 board. White fields a standard chess army; black fields three checkers pieces with torus-wrapping movement. Win conditions are asymmetric — not standard chess checkmate.
 
 ### Project goal
 
@@ -51,6 +51,7 @@ Rules documented here match the **current TypeScript implementation**. Rust and 
 
 Source: `[packages/game-engine/src/boardConstants.ts](../packages/game-engine/src/boardConstants.ts)`
 
+<<<<<<< HEAD
 | Side                                   | Pieces                         | Positions (v1)                   |
 | -------------------------------------- | ------------------------------ | -------------------------------- |
 | **White** (`TeamType.OUR`, `"w"`)      | Full chess back rank + 8 pawns | Rows 0–1 (standard chess layout) |
@@ -59,6 +60,14 @@ Source: `[packages/game-engine/src/boardConstants.ts](../packages/game-engine/sr
 There is no black chess army. Black's entire force is the two checkers (20 pieces total in v2 — see [§14.1](#141-rule-change--4-black-checkers)).
 
 Golden fixture: `[fixtures/initial_board.json](../fixtures/initial_board.json)` (`pieceCount: 20`).
+=======
+| Side                                   | Pieces                          | Positions                              |
+| -------------------------------------- | ------------------------------- | -------------------------------------- |
+| **White** (`TeamType.OUR`, `"w"`)      | Full chess back rank + 8 pawns  | Rows 0–1 (standard chess layout)       |
+| **Black** (`TeamType.OPPONENT`, `"b"`) | Three `checkers` pieces only    | `(2, 6)`, `(4, 6)`, and `(6, 6)`       |
+
+There is no black chess army. Black's entire force is the three checkers (one empty square between each on rank 6).
+>>>>>>> 4107f54961c92f1d1aa746e90f5023c5abf3f2ea
 
 `totalTurns` starts at **1**.
 
@@ -89,7 +98,7 @@ if (!this.pieces.some((p) => p.isKing && p.team === TeamType.OUR)) {
 
 | Winner            | Condition                  | Typical cause                   |
 | ----------------- | -------------------------- | ------------------------------- |
-| **White** (`"w"`) | No black pieces remain     | Both checkers captured          |
+| **White** (`"w"`) | No black pieces remain     | All three checkers captured     |
 | **Black** (`"b"`) | No white **king** on board | King captured via checkers jump |
 
 UI messages (`[Referee.tsx](../src/components/Referee/Referee.tsx)`):
@@ -1171,8 +1180,14 @@ v1 self-play (`[training/self_play.py](../training/self_play.py)`) trains one ne
 | Date       | Change                                                                                                        |
 | ---------- | ------------------------------------------------------------------------------------------------------------- |
 | 2026-07-06 | Initial ground truth — UI / Rust engine / Python training architecture, milestone checklist, shared contracts |
+<<<<<<< HEAD
 | 2026-07-08 | T1-6: expanded Stage B workflow, fixed eval suite spec, NPZ shard contract (§5.7)                             |
 | 2026-07-08 | T1-7: `promote.py` iterative loop, `eval-promotion` CLI, `promotion_win_rate` API                             |
 | 2026-07-11 | V2-T2: side-specific `--side w                                                                                |
 | 2026-07-11 | V2-T3: `promote.py --side w                                                                                   |
 | 2026-07-11 | V2-T4: asymmetric eval methodology — §9 gate tables + §14.3 shard/gate/smoke-test alignment for `wNNN`/`bNNN` |
+=======
+| 2026-07-08 | T1-6: expanded Stage B workflow, fixed eval suite spec, NPZ shard contract (§5.7) |
+| 2026-07-08 | T1-7: `promote.py` iterative loop, `eval-promotion` CLI, `promotion_win_rate` API |
+| 2026-07-14 | Black setup: three checkers at `(2, 6)`, `(4, 6)`, `(6, 6)` (one square between each) |
+>>>>>>> 4107f54961c92f1d1aa746e90f5023c5abf3f2ea

@@ -8,12 +8,15 @@ export const initialBoard: Board = new Board(
   [
     new Piece(
       new Position(2, 6),
+<<<<<<< HEAD
       PieceType.CHECKERS,
       TeamType.OPPONENT,
       false
     ),
     new Piece(
       new Position(3, 6),
+=======
+>>>>>>> 4107f54961c92f1d1aa746e90f5023c5abf3f2ea
       PieceType.CHECKERS,
       TeamType.OPPONENT,
       false
@@ -25,7 +28,11 @@ export const initialBoard: Board = new Board(
       false
     ),
     new Piece(
+<<<<<<< HEAD
       new Position(5, 6),
+=======
+      new Position(6, 6),
+>>>>>>> 4107f54961c92f1d1aa746e90f5023c5abf3f2ea
       PieceType.CHECKERS,
       TeamType.OPPONENT,
       false

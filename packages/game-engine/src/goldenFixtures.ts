@@ -58,7 +58,11 @@ export const goldenFixtures: GoldenFixture[] = [
   {
     name: "initial_board",
     board: serializeBoard(initialBoard),
+<<<<<<< HEAD
     expect: { pieceCount: 20 },
+=======
+    expect: { pieceCount: 19 },
+>>>>>>> 4107f54961c92f1d1aa746e90f5023c5abf3f2ea
   },
   {
     name: "checkers_single_hop_removes_pawn",
