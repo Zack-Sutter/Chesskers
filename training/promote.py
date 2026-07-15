@@ -8,12 +8,14 @@ Model naming
 * ``v001`` — value-only (Stage A)
 * ``v002+`` — dual-head policy+value (Stage B onward)
 
-Each iteration distills from the incumbent net, trains candidate ``v(N+1)``, and
-promotes only when the fixed Rust MCTS-vs-MCTS suite (arch §9) scores ≥
-``PROMOTION_THRESHOLD`` (55%).
+Each iteration guides MCTS with the incumbent net, trains candidate ``v(N+1)``,
+and promotes only when the fixed Rust MCTS-vs-MCTS suite (arch §9) scores ≥
+``PROMOTION_THRESHOLD`` (55%). Value targets default to distilled incumbent
+scores; pass ``--game-result`` for terminal outcomes instead.
 
 Usage:
     python promote.py --incumbent models/v002.onnx
+    python promote.py --incumbent models/v007.onnx --game-result --sims 500
     python promote.py --incumbent models/v002.onnx --eval-only --candidate models/v003.onnx
 """
 
@@ -113,6 +115,21 @@ def run_eval_suite(
     payload = json.loads(proc.stdout)
     if "error" in payload:
         raise RuntimeError(payload["error"])
+    # Optional breakdown printed when the engine reports per-model / per-side tallies.
+    if "challengerWins" in payload:
+        print(
+            f"  models: {payload['challenger']} {payload['challengerWins']}W / "
+            f"{payload['baseline']} {payload['baselineWins']}W / {payload['draws']}D"
+        )
+        print(
+            f"  colors: white {payload['whiteWins']}W / black {payload['blackWins']}W / "
+            f"{payload['draws']}D"
+        )
+        as_w, as_b = payload["challengerAsWhite"], payload["challengerAsBlack"]
+        print(
+            f"  challenger as white: {as_w['wins']}W/{as_w['losses']}L/{as_w['draws']}D; "
+            f"as black: {as_b['wins']}W/{as_b['losses']}L/{as_b['draws']}D"
+        )
     return float(payload["winRate"]), bool(payload["promoted"])
 
 
@@ -126,18 +143,21 @@ def generate_shards(
     max_moves: int,
     shard_size: int,
     seed: int,
+    game_result: bool = False,
 ) -> None:
     if shard_dir.exists():
         shutil.rmtree(shard_dir)
-    v001 = _V001(incumbent)
+    leaf = _V001(incumbent)
     rng = random.Random(seed)
     states, values, policy_idx, policy_val, games = generate_positions(
-        rng, positions, max_moves, sims, c_puct, v001
+        rng, positions, max_moves, sims, c_puct, leaf,
+        distill_value=not game_result,
     )
     write_shards(states, values, policy_idx, policy_val, shard_dir, shard_size)
+    target = "game-result outcomes" if game_result else f"distilled from {incumbent.name}"
     print(
         f"self-play: {len(states)} positions from {games} games -> {shard_dir} "
-        f"(distilled from {incumbent.name})"
+        f"({target}; leaf={incumbent.name})"
     )
 
 
@@ -188,6 +208,7 @@ def promote_once(
     threshold: float = PROMOTION_THRESHOLD,
     eval_only: bool = False,
     skip_train: bool = False,
+    game_result: bool = False,
 ) -> PromotionResult:
     if not incumbent.is_file():
         raise FileNotFoundError(f"incumbent not found: {incumbent}")
@@ -205,6 +226,7 @@ def promote_once(
                 incumbent, shard_dir,
                 positions=positions, sims=sims, c_puct=c_puct,
                 max_moves=max_moves, shard_size=shard_size, seed=seed,
+                game_result=game_result,
             )
             train_candidate(
                 shard_dir, candidate,
@@ -254,6 +276,9 @@ def main() -> None:
                         help="skip self-play + train; evaluate --candidate vs incumbent")
     parser.add_argument("--skip-train", action="store_true",
                         help="skip self-play + train; require existing --candidate")
+    parser.add_argument("--game-result", action="store_true",
+                        help="label value with terminal game outcomes instead of "
+                             "distilling the incumbent (MCTS leaves still use incumbent)")
     args = parser.parse_args()
 
     incumbent = args.incumbent
@@ -281,6 +306,7 @@ def main() -> None:
             threshold=args.threshold,
             eval_only=args.eval_only,
             skip_train=args.skip_train,
+            game_result=args.game_result,
         )
         if result.promoted:
             incumbent = result.incumbent

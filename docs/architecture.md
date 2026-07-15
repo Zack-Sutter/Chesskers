@@ -13,7 +13,7 @@
 
 ### What is Chesskers?
 
-Chesskers is a chess/checkers hybrid played on an 8×8 board. White fields a standard chess army; black fields three checkers pieces with torus-wrapping movement. Win conditions are asymmetric — not standard chess checkmate.
+Chesskers is a chess/checkers hybrid played on an 8×8 board. White fields a standard chess army; black fields two checkers pieces with torus-wrapping movement. Win conditions are asymmetric — not standard chess checkmate.
 
 ### Project goal
 
@@ -47,12 +47,12 @@ Rules documented here match the **current TypeScript implementation**. Rust and 
 
 Source: `[src/Constants.ts](../src/Constants.ts)`
 
-| Side                                   | Pieces                          | Positions                              |
-| -------------------------------------- | ------------------------------- | -------------------------------------- |
-| **White** (`TeamType.OUR`, `"w"`)      | Full chess back rank + 8 pawns  | Rows 0–1 (standard chess layout)       |
-| **Black** (`TeamType.OPPONENT`, `"b"`) | Three `checkers` pieces only    | `(2, 6)`, `(4, 6)`, and `(6, 6)`       |
+| Side                                   | Pieces                         | Positions                        |
+| -------------------------------------- | ------------------------------ | -------------------------------- |
+| **White** (`TeamType.OUR`, `"w"`)      | Full chess back rank + 8 pawns | Rows 0–1 (standard chess layout) |
+| **Black** (`TeamType.OPPONENT`, `"b"`) | Two `checkers` pieces only     | `(3, 6)` and `(4, 6)`            |
 
-There is no black chess army. Black's entire force is the three checkers (one empty square between each on rank 6).
+There is no black chess army. Black's entire force is the two checkers.
 
 `totalTurns` starts at **1**.
 
@@ -83,7 +83,7 @@ if (!this.pieces.some((p) => p.isKing && p.team === TeamType.OUR)) {
 
 | Winner            | Condition                  | Typical cause                   |
 | ----------------- | -------------------------- | ------------------------------- |
-| **White** (`"w"`) | No black pieces remain     | All three checkers captured     |
+| **White** (`"w"`) | No black pieces remain     | Both checkers captured          |
 | **Black** (`"b"`) | No white **king** on board | King captured via checkers jump |
 
 UI messages (`[Referee.tsx](../src/components/Referee/Referee.tsx)`):
@@ -849,4 +849,4 @@ Full deployment detail: [railway-vercel-migration.md §9](./railway-vercel-migra
 | 2026-07-06 | Initial ground truth — UI / Rust engine / Python training architecture, milestone checklist, shared contracts |
 | 2026-07-08 | T1-6: expanded Stage B workflow, fixed eval suite spec, NPZ shard contract (§5.7) |
 | 2026-07-08 | T1-7: `promote.py` iterative loop, `eval-promotion` CLI, `promotion_win_rate` API |
-| 2026-07-14 | Black setup: three checkers at `(2, 6)`, `(4, 6)`, `(6, 6)` (one square between each) |
+| 2026-07-14 | Black setup restored to two checkers at `(3, 6)`, `(4, 6)` |

@@ -353,20 +353,58 @@ impl Default for PromotionSuiteConfig {
     }
 }
 
+/// Per-seat W/L/D for the challenger when sitting that color.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct SideRecord {
+    pub wins: u32,
+    pub losses: u32,
+    pub draws: u32,
+}
+
+impl SideRecord {
+    fn record(&mut self, winner: Option<Team>, challenger_team: Team) {
+        match winner {
+            Some(w) if w == challenger_team => self.wins += 1,
+            Some(_) => self.losses += 1,
+            None => self.draws += 1,
+        }
+    }
+
+    pub fn games(&self) -> u32 {
+        self.wins + self.losses + self.draws
+    }
+}
+
+/// Full promotion-suite tallies (arch §9 scoring + per-model / per-color splits).
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct PromotionSuiteStats {
+    /// Challenger score fraction: (wins + 0.5·draws) / games.
+    pub win_rate: f64,
+    pub games: u32,
+    pub challenger_wins: u32,
+    pub baseline_wins: u32,
+    pub draws: u32,
+    /// Games where `Team::White` won (either model).
+    pub white_wins: u32,
+    /// Games where `Team::Black` won (either model).
+    pub black_wins: u32,
+    pub challenger_as_white: SideRecord,
+    pub challenger_as_black: SideRecord,
+}
+
 /// Color-balanced MCTS suite: challenger vs baseline at equal sim budgets.
-/// Returns the challenger's score fraction (wins + 0.5·draws) / games.
 /// Models are loaded from `models_dir/{stem}.onnx`.
-pub fn promotion_win_rate(
+pub fn promotion_suite(
     models_dir: &std::path::Path,
     challenger: &str,
     baseline: &str,
     start: &Board,
     config: &PromotionSuiteConfig,
-) -> Result<f64, String> {
+) -> Result<PromotionSuiteStats, String> {
     use crate::evaluator::OnnxEvaluator;
 
+    let mut stats = PromotionSuiteStats::default();
     let mut score = 0.0f64;
-    let mut games = 0.0f64;
     for seed in 0..config.seed_count {
         for chal_white in [true, false] {
             let mut chal_eval = OnnxEvaluator::from_file(models_dir.join(format!("{challenger}.onnx")))
@@ -397,15 +435,48 @@ pub fn promotion_win_rate(
                 )?
             };
             let chal_team = if chal_white { Team::White } else { Team::Black };
-            score += match winner {
-                Some(w) if w == chal_team => 1.0,
-                Some(_) => 0.0,
-                None => 0.5,
-            };
-            games += 1.0;
+            if chal_white {
+                stats.challenger_as_white.record(winner, chal_team);
+            } else {
+                stats.challenger_as_black.record(winner, chal_team);
+            }
+            match winner {
+                Some(Team::White) => stats.white_wins += 1,
+                Some(Team::Black) => stats.black_wins += 1,
+                None => stats.draws += 1,
+            }
+            match winner {
+                Some(w) if w == chal_team => {
+                    stats.challenger_wins += 1;
+                    score += 1.0;
+                }
+                Some(_) => {
+                    stats.baseline_wins += 1;
+                }
+                None => {
+                    score += 0.5;
+                }
+            }
+            stats.games += 1;
         }
     }
-    Ok(score / games)
+    stats.win_rate = if stats.games == 0 {
+        0.0
+    } else {
+        score / f64::from(stats.games)
+    };
+    Ok(stats)
+}
+
+/// Challenger score fraction (wins + 0.5·draws) / games.
+pub fn promotion_win_rate(
+    models_dir: &std::path::Path,
+    challenger: &str,
+    baseline: &str,
+    start: &Board,
+    config: &PromotionSuiteConfig,
+) -> Result<f64, String> {
+    Ok(promotion_suite(models_dir, challenger, baseline, start, config)?.win_rate)
 }
 
 #[cfg(test)]

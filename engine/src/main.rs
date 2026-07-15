@@ -21,7 +21,7 @@ fn usage() -> ! {
     );
     eprintln!("  play-random [--seed N]");
     eprintln!("  best-move --model PATH [--think-ms N] [--depth N]");
-    eprintln!("  eval-promotion --challenger STEM --baseline STEM [--models-dir DIR] [--threshold RATE] [--fixtures-dir DIR]");
+    eprintln!("  eval-promotion --challenger STEM --baseline STEM [--models-dir DIR] [--threshold RATE] [--fixtures-dir DIR] [--seeds N]");
     process::exit(1);
 }
 
@@ -93,6 +93,7 @@ fn parse_eval_promotion_args(mut args: impl Iterator<Item = String>) -> EvalProm
     let mut challenger = None;
     let mut baseline = None;
     let mut threshold = PROMOTION_WIN_THRESHOLD;
+    let mut seed_count = None;
 
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -130,6 +131,18 @@ fn parse_eval_promotion_args(mut args: impl Iterator<Item = String>) -> EvalProm
                     process::exit(1);
                 });
             }
+            "--seeds" => {
+                let value = args.next().unwrap_or_else(|| {
+                    eprintln!("--seeds requires a value");
+                    process::exit(1);
+                });
+                let n = parse_u32_flag("--seeds", &value);
+                if n == 0 {
+                    eprintln!("--seeds must be ≥ 1");
+                    process::exit(1);
+                }
+                seed_count = Some(n);
+            }
             _ => {
                 eprintln!("unknown flag: {arg}");
                 process::exit(1);
@@ -149,6 +162,7 @@ fn parse_eval_promotion_args(mut args: impl Iterator<Item = String>) -> EvalProm
         }),
         threshold,
         fixtures_dir,
+        seed_count,
     }
 }
 

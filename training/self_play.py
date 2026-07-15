@@ -120,16 +120,21 @@ def play_game(rng: random.Random, max_moves: int, sims: int, c_puct: float,
 
 
 def generate_positions(rng: random.Random, num_positions: int, max_moves: int,
-                       sims: int = 64, c_puct: float = 1.5, v001=None):
+                       sims: int = 64, c_puct: float = 1.5, v001=None,
+                       distill_value: bool | None = None):
     """Play games until at least ``num_positions`` are collected.
 
     With no ``v001`` model, MCTS uses the material leaf heuristic and value targets
     are the eventual game outcome (§5.4). When ``v001`` (an ``_V001`` wrapper) is
-    supplied, MCTS is guided by v001's value (higher-quality visit-count policy
-    targets) and value targets are distilled from v001 — anchoring v002's value to
-    v001's so the policy head is the net improvement measured by the T1-6 suite.
+    supplied, MCTS is guided by its value (higher-quality visit-count policy
+    targets). Value targets default to distilled ``v001`` scores when a model is
+    present; pass ``distill_value=False`` to keep leaf guidance but label with
+    terminal game results instead.
     """
     value_fn = v001.value if v001 is not None else material_value
+    use_distill = (v001 is not None) if distill_value is None else distill_value
+    if use_distill and v001 is None:
+        raise ValueError("distill_value=True requires a model")
     states: list[np.ndarray] = []
     outcomes: list[float] = []
     policies: list[list[tuple[int, float]]] = []
@@ -142,9 +147,11 @@ def generate_positions(rng: random.Random, num_positions: int, max_moves: int,
         outcomes.extend(_outcomes(game_teams, winner))
         policies.extend(game_policies)
         games += 1
+        print(f"  game {games}: {len(states)}/{num_positions} positions", flush=True)
 
     states_arr = np.asarray(states, dtype=np.float32)
-    if v001 is not None:
+    if use_distill:
+        assert v001 is not None
         values = v001.values(states_arr).astype(np.float32)
     else:
         values = np.asarray(outcomes, dtype=np.float32)
@@ -227,25 +234,30 @@ def main() -> None:
     parser.add_argument("--distill", type=Path, default=None, metavar="V001_ONNX",
                         help="path to v001.onnx; guide MCTS with its value and distill it as the "
                              "value target (anchors v002 value to v001; requires onnxruntime)")
+    parser.add_argument("--game-result", action="store_true",
+                        help="label value with terminal game outcomes; with --distill, still guide "
+                             "MCTS leaves with the model")
     args = parser.parse_args()
 
     v001 = _V001(args.distill) if args.distill else None
 
     rng = random.Random(args.seed)
     states, values, policy_idx, policy_val, games = generate_positions(
-        rng, args.positions, args.max_moves, args.sims, args.c_puct, v001
+        rng, args.positions, args.max_moves, args.sims, args.c_puct, v001,
+        distill_value=False if args.game_result else None,
     )
     paths = write_shards(states, values, policy_idx, policy_val, args.out, args.shard_size)
 
     print(f"{len(states)} positions from {games} games -> {len(paths)} shard(s) in {args.out}")
-    if v001 is not None:
-        print(f"value targets: distilled from {args.distill} "
-              f"(mean {values.mean():.3f}, range [{values.min():.3f}, {values.max():.3f}])")
-    else:
+    if args.game_result or v001 is None:
         wins = int((values == 1.0).sum())
         losses = int((values == -1.0).sum())
         draws = int((values == 0.0).sum())
-        print(f"outcomes: +1={wins}  -1={losses}  0={draws}")
+        guide = f"leaf={args.distill}" if v001 is not None else "leaf=material"
+        print(f"outcomes ({guide}): +1={wins}  -1={losses}  0={draws}")
+    else:
+        print(f"value targets: distilled from {args.distill} "
+              f"(mean {values.mean():.3f}, range [{values.min():.3f}, {values.max():.3f}])")
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ use crate::apply::apply_move;
 use crate::board::Board;
 use crate::bot::play_random_game;
 use crate::evaluator::OnnxEvaluator;
-use crate::mcts::{promotion_win_rate, PromotionSuiteConfig};
+use crate::mcts::{promotion_suite, PromotionSuiteConfig, SideRecord};
 use crate::search::{search_best_move_timed, TimedSearchConfig};
 use crate::state::{GoldenFixture, Move, SerializedBoard, Team};
 use serde::{Deserialize, Serialize};
@@ -48,6 +48,25 @@ pub struct EvalPromotionOptions {
     pub baseline: String,
     pub threshold: f64,
     pub fixtures_dir: String,
+    /// Override gate seed count (default 15 → 30 color-balanced games).
+    pub seed_count: Option<u32>,
+}
+
+#[derive(Debug, Serialize, PartialEq, Eq)]
+pub struct SideRecordJson {
+    pub wins: u32,
+    pub losses: u32,
+    pub draws: u32,
+}
+
+impl From<&SideRecord> for SideRecordJson {
+    fn from(r: &SideRecord) -> Self {
+        Self {
+            wins: r.wins,
+            losses: r.losses,
+            draws: r.draws,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, PartialEq)]
@@ -59,6 +78,19 @@ pub struct EvalPromotionResult {
     pub games: u32,
     pub threshold: f64,
     pub promoted: bool,
+    #[serde(rename = "challengerWins")]
+    pub challenger_wins: u32,
+    #[serde(rename = "baselineWins")]
+    pub baseline_wins: u32,
+    pub draws: u32,
+    #[serde(rename = "whiteWins")]
+    pub white_wins: u32,
+    #[serde(rename = "blackWins")]
+    pub black_wins: u32,
+    #[serde(rename = "challengerAsWhite")]
+    pub challenger_as_white: SideRecordJson,
+    #[serde(rename = "challengerAsBlack")]
+    pub challenger_as_black: SideRecordJson,
 }
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -167,9 +199,11 @@ pub fn run_eval_promotion(options: &EvalPromotionOptions) -> Result<String, CliE
     let mut board = Board::from_serialized(&fixture.board);
     board.calculate_all_moves();
 
-    let config = PromotionSuiteConfig::default();
-    let games = config.seed_count * 2;
-    let win_rate = promotion_win_rate(
+    let mut config = PromotionSuiteConfig::default();
+    if let Some(seeds) = options.seed_count {
+        config.seed_count = seeds;
+    }
+    let stats = promotion_suite(
         Path::new(&options.models_dir),
         &options.challenger,
         &options.baseline,
@@ -181,10 +215,17 @@ pub fn run_eval_promotion(options: &EvalPromotionOptions) -> Result<String, CliE
     serde_json::to_string(&EvalPromotionResult {
         challenger: options.challenger.clone(),
         baseline: options.baseline.clone(),
-        win_rate,
-        games,
+        win_rate: stats.win_rate,
+        games: stats.games,
         threshold: options.threshold,
-        promoted: win_rate >= options.threshold,
+        promoted: stats.win_rate >= options.threshold,
+        challenger_wins: stats.challenger_wins,
+        baseline_wins: stats.baseline_wins,
+        draws: stats.draws,
+        white_wins: stats.white_wins,
+        black_wins: stats.black_wins,
+        challenger_as_white: SideRecordJson::from(&stats.challenger_as_white),
+        challenger_as_black: SideRecordJson::from(&stats.challenger_as_black),
     })
     .map_err(|e| CliError {
         error: e.to_string(),
