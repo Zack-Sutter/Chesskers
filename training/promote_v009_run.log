@@ -1,0 +1,824 @@
+  game 1: 27/23040 positions
+  game 2: 43/23040 positions
+  game 3: 68/23040 positions
+  game 4: 96/23040 positions
+  game 5: 133/23040 positions
+  game 6: 142/23040 positions
+  game 7: 169/23040 positions
+  game 8: 202/23040 positions
+  game 9: 208/23040 positions
+  game 10: 271/23040 positions
+  game 11: 288/23040 positions
+  game 12: 300/23040 positions
+  game 13: 308/23040 positions
+  game 14: 337/23040 positions
+  game 15: 345/23040 positions
+  game 16: 382/23040 positions
+  game 17: 398/23040 positions
+  game 18: 412/23040 positions
+  game 19: 455/23040 positions
+  game 20: 497/23040 positions
+  game 21: 511/23040 positions
+  game 22: 560/23040 positions
+  game 23: 601/23040 positions
+  game 24: 617/23040 positions
+  game 25: 670/23040 positions
+  game 26: 703/23040 positions
+  game 27: 715/23040 positions
+  game 28: 782/23040 positions
+  game 29: 798/23040 positions
+  game 30: 816/23040 positions
+  game 31: 863/23040 positions
+  game 32: 869/23040 positions
+  game 33: 927/23040 positions
+  game 34: 962/23040 positions
+  game 35: 978/23040 positions
+  game 36: 1020/23040 positions
+  game 37: 1035/23040 positions
+  game 38: 1048/23040 positions
+  game 39: 1053/23040 positions
+  game 40: 1086/23040 positions
+  game 41: 1097/23040 positions
+  game 42: 1176/23040 positions
+  game 43: 1226/23040 positions
+  game 44: 1236/23040 positions
+  game 45: 1299/23040 positions
+  game 46: 1344/23040 positions
+  game 47: 1353/23040 positions
+  game 48: 1384/23040 positions
+  game 49: 1418/23040 positions
+  game 50: 1478/23040 positions
+  game 51: 1491/23040 positions
+  game 52: 1525/23040 positions
+  game 53: 1547/23040 positions
+  game 54: 1584/23040 positions
+  game 55: 1590/23040 positions
+  game 56: 1611/23040 positions
+  game 57: 1658/23040 positions
+  game 58: 1686/23040 positions
+  game 59: 1711/23040 positions
+  game 60: 1769/23040 positions
+  game 61: 1819/23040 positions
+  game 62: 1839/23040 positions
+  game 63: 1898/23040 positions
+  game 64: 1925/23040 positions
+  game 65: 1986/23040 positions
+  game 66: 1997/23040 positions
+  game 67: 2006/23040 positions
+  game 68: 2030/23040 positions
+  game 69: 2041/23040 positions
+  game 70: 2187/23040 positions
+  game 71: 2200/23040 positions
+  game 72: 2222/23040 positions
+  game 73: 2226/23040 positions
+  game 74: 2242/23040 positions
+  game 75: 2248/23040 positions
+  game 76: 2262/23040 positions
+  game 77: 2279/23040 positions
+  game 78: 2338/23040 positions
+  game 79: 2393/23040 positions
+  game 80: 2430/23040 positions
+  game 81: 2448/23040 positions
+  game 82: 2492/23040 positions
+  game 83: 2498/23040 positions
+  game 84: 2511/23040 positions
+  game 85: 2564/23040 positions
+  game 86: 2588/23040 positions
+  game 87: 2656/23040 positions
+  game 88: 2708/23040 positions
+  game 89: 2722/23040 positions
+  game 90: 2734/23040 positions
+  game 91: 2775/23040 positions
+  game 92: 2818/23040 positions
+  game 93: 2868/23040 positions
+  game 94: 2878/23040 positions
+  game 95: 2911/23040 positions
+  game 96: 2950/23040 positions
+  game 97: 2987/23040 positions
+  game 98: 3045/23040 positions
+  game 99: 3068/23040 positions
+  game 100: 3073/23040 positions
+  game 101: 3132/23040 positions
+  game 102: 3175/23040 positions
+  game 103: 3199/23040 positions
+  game 104: 3207/23040 positions
+  game 105: 3228/23040 positions
+  game 106: 3240/23040 positions
+  game 107: 3277/23040 positions
+  game 108: 3290/23040 positions
+  game 109: 3305/23040 positions
+  game 110: 3312/23040 positions
+  game 111: 3378/23040 positions
+  game 112: 3413/23040 positions
+  game 113: 3430/23040 positions
+  game 114: 3465/23040 positions
+  game 115: 3566/23040 positions
+  game 116: 3584/23040 positions
+  game 117: 3618/23040 positions
+  game 118: 3648/23040 positions
+  game 119: 3689/23040 positions
+  game 120: 3743/23040 positions
+  game 121: 3772/23040 positions
+  game 122: 3824/23040 positions
+  game 123: 3837/23040 positions
+  game 124: 3923/23040 positions
+  game 125: 3940/23040 positions
+  game 126: 3958/23040 positions
+  game 127: 4001/23040 positions
+  game 128: 4073/23040 positions
+  game 129: 4142/23040 positions
+  game 130: 4156/23040 positions
+  game 131: 4173/23040 positions
+  game 132: 4184/23040 positions
+  game 133: 4223/23040 positions
+  game 134: 4236/23040 positions
+  game 135: 4248/23040 positions
+  game 136: 4292/23040 positions
+  game 137: 4310/23040 positions
+  game 138: 4314/23040 positions
+  game 139: 4342/23040 positions
+  game 140: 4437/23040 positions
+  game 141: 4463/23040 positions
+  game 142: 4495/23040 positions
+  game 143: 4510/23040 positions
+  game 144: 4518/23040 positions
+  game 145: 4530/23040 positions
+  game 146: 4561/23040 positions
+  game 147: 4568/23040 positions
+  game 148: 4585/23040 positions
+  game 149: 4612/23040 positions
+  game 150: 4657/23040 positions
+  game 151: 4717/23040 positions
+  game 152: 4769/23040 positions
+  game 153: 4777/23040 positions
+  game 154: 4817/23040 positions
+  game 155: 4834/23040 positions
+  game 156: 4846/23040 positions
+  game 157: 4879/23040 positions
+  game 158: 4913/23040 positions
+  game 159: 4921/23040 positions
+  game 160: 4931/23040 positions
+  game 161: 4996/23040 positions
+  game 162: 5089/23040 positions
+  game 163: 5146/23040 positions
+  game 164: 5154/23040 positions
+  game 165: 5200/23040 positions
+  game 166: 5285/23040 positions
+  game 167: 5304/23040 positions
+  game 168: 5387/23040 positions
+  game 169: 5438/23040 positions
+  game 170: 5500/23040 positions
+  game 171: 5515/23040 positions
+  game 172: 5553/23040 positions
+  game 173: 5612/23040 positions
+  game 174: 5649/23040 positions
+  game 175: 5683/23040 positions
+  game 176: 5722/23040 positions
+  game 177: 5761/23040 positions
+  game 178: 5817/23040 positions
+  game 179: 5862/23040 positions
+  game 180: 5891/23040 positions
+  game 181: 5942/23040 positions
+  game 182: 5966/23040 positions
+  game 183: 6015/23040 positions
+  game 184: 6024/23040 positions
+  game 185: 6069/23040 positions
+  game 186: 6129/23040 positions
+  game 187: 6168/23040 positions
+  game 188: 6205/23040 positions
+  game 189: 6236/23040 positions
+  game 190: 6243/23040 positions
+  game 191: 6268/23040 positions
+  game 192: 6303/23040 positions
+  game 193: 6319/23040 positions
+  game 194: 6334/23040 positions
+  game 195: 6377/23040 positions
+  game 196: 6383/23040 positions
+  game 197: 6400/23040 positions
+  game 198: 6407/23040 positions
+  game 199: 6421/23040 positions
+  game 200: 6440/23040 positions
+  game 201: 6449/23040 positions
+  game 202: 6479/23040 positions
+  game 203: 6484/23040 positions
+  game 204: 6493/23040 positions
+  game 205: 6507/23040 positions
+  game 206: 6514/23040 positions
+  game 207: 6560/23040 positions
+  game 208: 6608/23040 positions
+  game 209: 6629/23040 positions
+  game 210: 6639/23040 positions
+  game 211: 6668/23040 positions
+  game 212: 6675/23040 positions
+  game 213: 6684/23040 positions
+  game 214: 6728/23040 positions
+  game 215: 6754/23040 positions
+  game 216: 6804/23040 positions
+  game 217: 6824/23040 positions
+  game 218: 6863/23040 positions
+  game 219: 6876/23040 positions
+  game 220: 6938/23040 positions
+  game 221: 6963/23040 positions
+  game 222: 6977/23040 positions
+  game 223: 6986/23040 positions
+  game 224: 7013/23040 positions
+  game 225: 7023/23040 positions
+  game 226: 7168/23040 positions
+  game 227: 7196/23040 positions
+  game 228: 7203/23040 positions
+  game 229: 7235/23040 positions
+  game 230: 7246/23040 positions
+  game 231: 7255/23040 positions
+  game 232: 7301/23040 positions
+  game 233: 7341/23040 positions
+  game 234: 7374/23040 positions
+  game 235: 7400/23040 positions
+  game 236: 7428/23040 positions
+  game 237: 7439/23040 positions
+  game 238: 7465/23040 positions
+  game 239: 7484/23040 positions
+  game 240: 7529/23040 positions
+  game 241: 7574/23040 positions
+  game 242: 7611/23040 positions
+  game 243: 7638/23040 positions
+  game 244: 7646/23040 positions
+  game 245: 7677/23040 positions
+  game 246: 7724/23040 positions
+  game 247: 7744/23040 positions
+  game 248: 7758/23040 positions
+  game 249: 7770/23040 positions
+  game 250: 7827/23040 positions
+  game 251: 7835/23040 positions
+  game 252: 7900/23040 positions
+  game 253: 7910/23040 positions
+  game 254: 7947/23040 positions
+  game 255: 7981/23040 positions
+  game 256: 7989/23040 positions
+  game 257: 8003/23040 positions
+  game 258: 8009/23040 positions
+  game 259: 8016/23040 positions
+  game 260: 8111/23040 positions
+  game 261: 8127/23040 positions
+  game 262: 8135/23040 positions
+  game 263: 8168/23040 positions
+  game 264: 8180/23040 positions
+  game 265: 8226/23040 positions
+  game 266: 8232/23040 positions
+  game 267: 8241/23040 positions
+  game 268: 8257/23040 positions
+  game 269: 8275/23040 positions
+  game 270: 8290/23040 positions
+  game 271: 8305/23040 positions
+  game 272: 8348/23040 positions
+  game 273: 8386/23040 positions
+  game 274: 8399/23040 positions
+  game 275: 8404/23040 positions
+  game 276: 8489/23040 positions
+  game 277: 8553/23040 positions
+  game 278: 8597/23040 positions
+  game 279: 8611/23040 positions
+  game 280: 8629/23040 positions
+  game 281: 8661/23040 positions
+  game 282: 8673/23040 positions
+  game 283: 8710/23040 positions
+  game 284: 8721/23040 positions
+  game 285: 8756/23040 positions
+  game 286: 8822/23040 positions
+  game 287: 8834/23040 positions
+  game 288: 8851/23040 positions
+  game 289: 8875/23040 positions
+  game 290: 8903/23040 positions
+  game 291: 8921/23040 positions
+  game 292: 8952/23040 positions
+  game 293: 8957/23040 positions
+  game 294: 8972/23040 positions
+  game 295: 8988/23040 positions
+  game 296: 9003/23040 positions
+  game 297: 9033/23040 positions
+  game 298: 9054/23040 positions
+  game 299: 9096/23040 positions
+  game 300: 9109/23040 positions
+  game 301: 9132/23040 positions
+  game 302: 9146/23040 positions
+  game 303: 9181/23040 positions
+  game 304: 9198/23040 positions
+  game 305: 9208/23040 positions
+  game 306: 9327/23040 positions
+  game 307: 9362/23040 positions
+  game 308: 9378/23040 positions
+  game 309: 9386/23040 positions
+  game 310: 9405/23040 positions
+  game 311: 9468/23040 positions
+  game 312: 9505/23040 positions
+  game 313: 9511/23040 positions
+  game 314: 9558/23040 positions
+  game 315: 9567/23040 positions
+  game 316: 9609/23040 positions
+  game 317: 9645/23040 positions
+  game 318: 9651/23040 positions
+  game 319: 9701/23040 positions
+  game 320: 9708/23040 positions
+  game 321: 9767/23040 positions
+  game 322: 9776/23040 positions
+  game 323: 9793/23040 positions
+  game 324: 9825/23040 positions
+  game 325: 9890/23040 positions
+  game 326: 9909/23040 positions
+  game 327: 9958/23040 positions
+  game 328: 10009/23040 positions
+  game 329: 10035/23040 positions
+  game 330: 10049/23040 positions
+  game 331: 10064/23040 positions
+  game 332: 10080/23040 positions
+  game 333: 10107/23040 positions
+  game 334: 10132/23040 positions
+  game 335: 10151/23040 positions
+  game 336: 10196/23040 positions
+  game 337: 10243/23040 positions
+  game 338: 10260/23040 positions
+  game 339: 10278/23040 positions
+  game 340: 10351/23040 positions
+  game 341: 10369/23040 positions
+  game 342: 10374/23040 positions
+  game 343: 10388/23040 positions
+  game 344: 10404/23040 positions
+  game 345: 10455/23040 positions
+  game 346: 10492/23040 positions
+  game 347: 10554/23040 positions
+  game 348: 10595/23040 positions
+  game 349: 10657/23040 positions
+  game 350: 10688/23040 positions
+  game 351: 10727/23040 positions
+  game 352: 10764/23040 positions
+  game 353: 10776/23040 positions
+  game 354: 10872/23040 positions
+  game 355: 10948/23040 positions
+  game 356: 10994/23040 positions
+  game 357: 11020/23040 positions
+  game 358: 11115/23040 positions
+  game 359: 11134/23040 positions
+  game 360: 11141/23040 positions
+  game 361: 11147/23040 positions
+  game 362: 11165/23040 positions
+  game 363: 11192/23040 positions
+  game 364: 11227/23040 positions
+  game 365: 11241/23040 positions
+  game 366: 11251/23040 positions
+  game 367: 11256/23040 positions
+  game 368: 11270/23040 positions
+  game 369: 11287/23040 positions
+  game 370: 11299/23040 positions
+  game 371: 11328/23040 positions
+  game 372: 11344/23040 positions
+  game 373: 11395/23040 positions
+  game 374: 11432/23040 positions
+  game 375: 11471/23040 positions
+  game 376: 11510/23040 positions
+  game 377: 11573/23040 positions
+  game 378: 11733/23040 positions
+  game 379: 11753/23040 positions
+  game 380: 11802/23040 positions
+  game 381: 11820/23040 positions
+  game 382: 11831/23040 positions
+  game 383: 11911/23040 positions
+  game 384: 11939/23040 positions
+  game 385: 11993/23040 positions
+  game 386: 12003/23040 positions
+  game 387: 12011/23040 positions
+  game 388: 12057/23040 positions
+  game 389: 12107/23040 positions
+  game 390: 12141/23040 positions
+  game 391: 12184/23040 positions
+  game 392: 12200/23040 positions
+  game 393: 12213/23040 positions
+  game 394: 12222/23040 positions
+  game 395: 12232/23040 positions
+  game 396: 12240/23040 positions
+  game 397: 12255/23040 positions
+  game 398: 12300/23040 positions
+  game 399: 12335/23040 positions
+  game 400: 12372/23040 positions
+  game 401: 12433/23040 positions
+  game 402: 12497/23040 positions
+  game 403: 12527/23040 positions
+  game 404: 12547/23040 positions
+  game 405: 12567/23040 positions
+  game 406: 12595/23040 positions
+  game 407: 12626/23040 positions
+  game 408: 12658/23040 positions
+  game 409: 12693/23040 positions
+  game 410: 12744/23040 positions
+  game 411: 12782/23040 positions
+  game 412: 12850/23040 positions
+  game 413: 12883/23040 positions
+  game 414: 12896/23040 positions
+  game 415: 12964/23040 positions
+  game 416: 13009/23040 positions
+  game 417: 13017/23040 positions
+  game 418: 13055/23040 positions
+  game 419: 13072/23040 positions
+  game 420: 13091/23040 positions
+  game 421: 13101/23040 positions
+  game 422: 13159/23040 positions
+  game 423: 13195/23040 positions
+  game 424: 13203/23040 positions
+  game 425: 13218/23040 positions
+  game 426: 13264/23040 positions
+  game 427: 13275/23040 positions
+  game 428: 13310/23040 positions
+  game 429: 13325/23040 positions
+  game 430: 13335/23040 positions
+  game 431: 13392/23040 positions
+  game 432: 13404/23040 positions
+  game 433: 13456/23040 positions
+  game 434: 13504/23040 positions
+  game 435: 13549/23040 positions
+  game 436: 13558/23040 positions
+  game 437: 13594/23040 positions
+  game 438: 13611/23040 positions
+  game 439: 13623/23040 positions
+  game 440: 13669/23040 positions
+  game 441: 13689/23040 positions
+  game 442: 13745/23040 positions
+  game 443: 13755/23040 positions
+  game 444: 13835/23040 positions
+  game 445: 13864/23040 positions
+  game 446: 13874/23040 positions
+  game 447: 13884/23040 positions
+  game 448: 13894/23040 positions
+  game 449: 13926/23040 positions
+  game 450: 13973/23040 positions
+  game 451: 13983/23040 positions
+  game 452: 13992/23040 positions
+  game 453: 14038/23040 positions
+  game 454: 14096/23040 positions
+  game 455: 14103/23040 positions
+  game 456: 14144/23040 positions
+  game 457: 14153/23040 positions
+  game 458: 14199/23040 positions
+  game 459: 14240/23040 positions
+  game 460: 14293/23040 positions
+  game 461: 14301/23040 positions
+  game 462: 14310/23040 positions
+  game 463: 14318/23040 positions
+  game 464: 14355/23040 positions
+  game 465: 14370/23040 positions
+  game 466: 14383/23040 positions
+  game 467: 14421/23040 positions
+  game 468: 14442/23040 positions
+  game 469: 14489/23040 positions
+  game 470: 14499/23040 positions
+  game 471: 14552/23040 positions
+  game 472: 14558/23040 positions
+  game 473: 14596/23040 positions
+  game 474: 14617/23040 positions
+  game 475: 14629/23040 positions
+  game 476: 14634/23040 positions
+  game 477: 14648/23040 positions
+  game 478: 14656/23040 positions
+  game 479: 14681/23040 positions
+  game 480: 14698/23040 positions
+  game 481: 14744/23040 positions
+  game 482: 14753/23040 positions
+  game 483: 14763/23040 positions
+  game 484: 14834/23040 positions
+  game 485: 14876/23040 positions
+  game 486: 14921/23040 positions
+  game 487: 14932/23040 positions
+  game 488: 14938/23040 positions
+  game 489: 14949/23040 positions
+  game 490: 14963/23040 positions
+  game 491: 14975/23040 positions
+  game 492: 14992/23040 positions
+  game 493: 15008/23040 positions
+  game 494: 15016/23040 positions
+  game 495: 15032/23040 positions
+  game 496: 15062/23040 positions
+  game 497: 15086/23040 positions
+  game 498: 15130/23040 positions
+  game 499: 15136/23040 positions
+  game 500: 15149/23040 positions
+  game 501: 15220/23040 positions
+  game 502: 15269/23040 positions
+  game 503: 15290/23040 positions
+  game 504: 15322/23040 positions
+  game 505: 15330/23040 positions
+  game 506: 15351/23040 positions
+  game 507: 15392/23040 positions
+  game 508: 15419/23040 positions
+  game 509: 15455/23040 positions
+  game 510: 15483/23040 positions
+  game 511: 15549/23040 positions
+  game 512: 15567/23040 positions
+  game 513: 15579/23040 positions
+  game 514: 15603/23040 positions
+  game 515: 15610/23040 positions
+  game 516: 15658/23040 positions
+  game 517: 15709/23040 positions
+  game 518: 15716/23040 positions
+  game 519: 15779/23040 positions
+  game 520: 15812/23040 positions
+  game 521: 15844/23040 positions
+  game 522: 15870/23040 positions
+  game 523: 15903/23040 positions
+  game 524: 15917/23040 positions
+  game 525: 15932/23040 positions
+  game 526: 15981/23040 positions
+  game 527: 15999/23040 positions
+  game 528: 16027/23040 positions
+  game 529: 16037/23040 positions
+  game 530: 16090/23040 positions
+  game 531: 16146/23040 positions
+  game 532: 16182/23040 positions
+  game 533: 16223/23040 positions
+  game 534: 16236/23040 positions
+  game 535: 16274/23040 positions
+  game 536: 16319/23040 positions
+  game 537: 16405/23040 positions
+  game 538: 16437/23040 positions
+  game 539: 16493/23040 positions
+  game 540: 16524/23040 positions
+  game 541: 16562/23040 positions
+  game 542: 16641/23040 positions
+  game 543: 16652/23040 positions
+  game 544: 16662/23040 positions
+  game 545: 16676/23040 positions
+  game 546: 16690/23040 positions
+  game 547: 16704/23040 positions
+  game 548: 16747/23040 positions
+  game 549: 16782/23040 positions
+  game 550: 16789/23040 positions
+  game 551: 16823/23040 positions
+  game 552: 16871/23040 positions
+  game 553: 16904/23040 positions
+  game 554: 16917/23040 positions
+  game 555: 16961/23040 positions
+  game 556: 17010/23040 positions
+  game 557: 17026/23040 positions
+  game 558: 17067/23040 positions
+  game 559: 17095/23040 positions
+  game 560: 17153/23040 positions
+  game 561: 17186/23040 positions
+  game 562: 17220/23040 positions
+  game 563: 17293/23040 positions
+  game 564: 17307/23040 positions
+  game 565: 17333/23040 positions
+  game 566: 17347/23040 positions
+  game 567: 17377/23040 positions
+  game 568: 17454/23040 positions
+  game 569: 17495/23040 positions
+  game 570: 17504/23040 positions
+  game 571: 17580/23040 positions
+  game 572: 17627/23040 positions
+  game 573: 17658/23040 positions
+  game 574: 17711/23040 positions
+  game 575: 17752/23040 positions
+  game 576: 17760/23040 positions
+  game 577: 17771/23040 positions
+  game 578: 17809/23040 positions
+  game 579: 17839/23040 positions
+  game 580: 17886/23040 positions
+  game 581: 17911/23040 positions
+  game 582: 17938/23040 positions
+  game 583: 17944/23040 positions
+  game 584: 17987/23040 positions
+  game 585: 18044/23040 positions
+  game 586: 18107/23040 positions
+  game 587: 18150/23040 positions
+  game 588: 18224/23040 positions
+  game 589: 18265/23040 positions
+  game 590: 18279/23040 positions
+  game 591: 18314/23040 positions
+  game 592: 18342/23040 positions
+  game 593: 18353/23040 positions
+  game 594: 18385/23040 positions
+  game 595: 18390/23040 positions
+  game 596: 18424/23040 positions
+  game 597: 18494/23040 positions
+  game 598: 18534/23040 positions
+  game 599: 18569/23040 positions
+  game 600: 18617/23040 positions
+  game 601: 18634/23040 positions
+  game 602: 18667/23040 positions
+  game 603: 18690/23040 positions
+  game 604: 18705/23040 positions
+  game 605: 18733/23040 positions
+  game 606: 18767/23040 positions
+  game 607: 18814/23040 positions
+  game 608: 18857/23040 positions
+  game 609: 18871/23040 positions
+  game 610: 18928/23040 positions
+  game 611: 19006/23040 positions
+  game 612: 19018/23040 positions
+  game 613: 19028/23040 positions
+  game 614: 19058/23040 positions
+  game 615: 19093/23040 positions
+  game 616: 19129/23040 positions
+  game 617: 19199/23040 positions
+  game 618: 19286/23040 positions
+  game 619: 19309/23040 positions
+  game 620: 19362/23040 positions
+  game 621: 19385/23040 positions
+  game 622: 19426/23040 positions
+  game 623: 19454/23040 positions
+  game 624: 19507/23040 positions
+  game 625: 19532/23040 positions
+  game 626: 19550/23040 positions
+  game 627: 19566/23040 positions
+  game 628: 19619/23040 positions
+  game 629: 19656/23040 positions
+  game 630: 19706/23040 positions
+  game 631: 19716/23040 positions
+  game 632: 19746/23040 positions
+  game 633: 19803/23040 positions
+  game 634: 19853/23040 positions
+  game 635: 19915/23040 positions
+  game 636: 19928/23040 positions
+  game 637: 19959/23040 positions
+  game 638: 19966/23040 positions
+  game 639: 19974/23040 positions
+  game 640: 20011/23040 positions
+  game 641: 20070/23040 positions
+  game 642: 20106/23040 positions
+  game 643: 20145/23040 positions
+  game 644: 20164/23040 positions
+  game 645: 20170/23040 positions
+  game 646: 20181/23040 positions
+  game 647: 20220/23040 positions
+  game 648: 20229/23040 positions
+  game 649: 20258/23040 positions
+  game 650: 20292/23040 positions
+  game 651: 20320/23040 positions
+  game 652: 20351/23040 positions
+  game 653: 20368/23040 positions
+  game 654: 20386/23040 positions
+  game 655: 20401/23040 positions
+  game 656: 20437/23040 positions
+  game 657: 20503/23040 positions
+  game 658: 20517/23040 positions
+  game 659: 20590/23040 positions
+  game 660: 20626/23040 positions
+  game 661: 20642/23040 positions
+  game 662: 20659/23040 positions
+  game 663: 20712/23040 positions
+  game 664: 20727/23040 positions
+  game 665: 20766/23040 positions
+  game 666: 20816/23040 positions
+  game 667: 20844/23040 positions
+  game 668: 20877/23040 positions
+  game 669: 20913/23040 positions
+  game 670: 20929/23040 positions
+  game 671: 20993/23040 positions
+  game 672: 21011/23040 positions
+  game 673: 21028/23040 positions
+  game 674: 21064/23040 positions
+  game 675: 21137/23040 positions
+  game 676: 21152/23040 positions
+  game 677: 21201/23040 positions
+  game 678: 21234/23040 positions
+  game 679: 21247/23040 positions
+  game 680: 21289/23040 positions
+  game 681: 21303/23040 positions
+  game 682: 21318/23040 positions
+  game 683: 21334/23040 positions
+  game 684: 21401/23040 positions
+  game 685: 21431/23040 positions
+  game 686: 21442/23040 positions
+  game 687: 21455/23040 positions
+  game 688: 21466/23040 positions
+  game 689: 21514/23040 positions
+  game 690: 21578/23040 positions
+  game 691: 21613/23040 positions
+  game 692: 21660/23040 positions
+  game 693: 21669/23040 positions
+  game 694: 21701/23040 positions
+  game 695: 21752/23040 positions
+  game 696: 21763/23040 positions
+  game 697: 21769/23040 positions
+  game 698: 21782/23040 positions
+  game 699: 21843/23040 positions
+  game 700: 21869/23040 positions
+  game 701: 21962/23040 positions
+  game 702: 21974/23040 positions
+  game 703: 22077/23040 positions
+  game 704: 22126/23040 positions
+  game 705: 22133/23040 positions
+  game 706: 22155/23040 positions
+  game 707: 22159/23040 positions
+  game 708: 22175/23040 positions
+  game 709: 22187/23040 positions
+  game 710: 22206/23040 positions
+  game 711: 22223/23040 positions
+  game 712: 22270/23040 positions
+  game 713: 22278/23040 positions
+  game 714: 22338/23040 positions
+  game 715: 22407/23040 positions
+  game 716: 22438/23040 positions
+  game 717: 22468/23040 positions
+  game 718: 22478/23040 positions
+  game 719: 22502/23040 positions
+  game 720: 22536/23040 positions
+  game 721: 22579/23040 positions
+  game 722: 22640/23040 positions
+  game 723: 22650/23040 positions
+  game 724: 22720/23040 positions
+  game 725: 22743/23040 positions
+  game 726: 22754/23040 positions
+  game 727: 22807/23040 positions
+  game 728: 22832/23040 positions
+  game 729: 22843/23040 positions
+  game 730: 22876/23040 positions
+  game 731: 22927/23040 positions
+  game 732: 22936/23040 positions
+  game 733: 23015/23040 positions
+  game 734: 23031/23040 positions
+  game 735: 23056/23040 positions
+self-play: 23056 positions from 735 games -> /home/zachk/Documents/Projects/Chesskers/training/shards/promote (game-result outcomes; leaf=v008.onnx)
+train: 23056 positions from /home/zachk/Documents/Projects/Chesskers/training/shards/promote
+init weights from v008.onnx
+epoch   1/40  value_mse=0.8336  policy_ce=3.4249
+epoch   2/40  value_mse=0.6751  policy_ce=3.0903
+epoch   3/40  value_mse=0.5891  policy_ce=2.9414
+epoch   4/40  value_mse=0.5197  policy_ce=2.8276
+epoch   5/40  value_mse=0.4665  policy_ce=2.7322
+epoch   6/40  value_mse=0.4300  policy_ce=2.6532
+epoch   7/40  value_mse=0.4026  policy_ce=2.5828
+epoch   8/40  value_mse=0.3771  policy_ce=2.5232
+epoch   9/40  value_mse=0.3566  policy_ce=2.4675
+epoch  10/40  value_mse=0.3474  policy_ce=2.4221
+epoch  11/40  value_mse=0.3293  policy_ce=2.3798
+epoch  12/40  value_mse=0.3150  policy_ce=2.3434
+epoch  13/40  value_mse=0.3039  policy_ce=2.3122
+epoch  14/40  value_mse=0.2949  policy_ce=2.2841
+epoch  15/40  value_mse=0.2841  policy_ce=2.2598
+epoch  16/40  value_mse=0.2787  policy_ce=2.2372
+epoch  17/40  value_mse=0.2679  policy_ce=2.2177
+epoch  18/40  value_mse=0.2634  policy_ce=2.2004
+epoch  19/40  value_mse=0.2555  policy_ce=2.1848
+epoch  20/40  value_mse=0.2535  policy_ce=2.1701
+epoch  21/40  value_mse=0.2469  policy_ce=2.1566
+epoch  22/40  value_mse=0.2402  policy_ce=2.1448
+epoch  23/40  value_mse=0.2375  policy_ce=2.1343
+epoch  24/40  value_mse=0.2359  policy_ce=2.1237
+epoch  25/40  value_mse=0.2300  policy_ce=2.1146
+epoch  26/40  value_mse=0.2245  policy_ce=2.1055
+epoch  27/40  value_mse=0.2222  policy_ce=2.0973
+epoch  28/40  value_mse=0.2190  policy_ce=2.0904
+epoch  29/40  value_mse=0.2177  policy_ce=2.0830
+epoch  30/40  value_mse=0.2179  policy_ce=2.0753
+epoch  31/40  value_mse=0.2149  policy_ce=2.0698
+epoch  32/40  value_mse=0.2081  policy_ce=2.0634
+epoch  33/40  value_mse=0.2061  policy_ce=2.0568
+epoch  34/40  value_mse=0.2112  policy_ce=2.0523
+epoch  35/40  value_mse=0.2031  policy_ce=2.0469
+epoch  36/40  value_mse=0.2007  policy_ce=2.0424
+epoch  37/40  value_mse=0.2025  policy_ce=2.0379
+epoch  38/40  value_mse=0.1996  policy_ce=2.0324
+epoch  39/40  value_mse=0.1992  policy_ce=2.0288
+epoch  40/40  value_mse=0.1939  policy_ce=2.0245
+exported candidate -> /home/zachk/Documents/Projects/Chesskers/training/models/v009.onnx
+Traceback (most recent call last):
+  File "/home/zachk/Documents/Projects/Chesskers/training/promote.py", line 323, in <module>
+    main()
+  File "/home/zachk/Documents/Projects/Chesskers/training/promote.py", line 291, in main
+    result = promote_once(
+             ^^^^^^^^^^^^^
+  File "/home/zachk/Documents/Projects/Chesskers/training/promote.py", line 240, in promote_once
+    win_rate, promoted = run_eval_suite(incumbent, candidate, threshold=threshold)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zachk/Documents/Projects/Chesskers/training/promote.py", line 92, in run_eval_suite
+    cand_stem, inc_stem = _stage_models(incumbent, candidate, engine_models)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zachk/Documents/Projects/Chesskers/training/promote.py", line 78, in _stage_models
+    shutil.copy2(incumbent, engine_models / f"{inc_stem}.onnx")
+  File "/usr/lib/python3.12/shutil.py", line 475, in copy2
+    copyfile(src, dst, follow_symlinks=follow_symlinks)
+  File "/usr/lib/python3.12/shutil.py", line 240, in copyfile
+    raise SameFileError("{!r} and {!r} are the same file".format(src, dst))
+shutil.SameFileError: PosixPath('/home/zachk/Documents/Projects/Chesskers/training/../engine/models/v008.onnx') and PosixPath('/home/zachk/Documents/Projects/Chesskers/engine/models/v008.onnx') are the same file
+Traceback (most recent call last):
+  File "/home/zachk/Documents/Projects/Chesskers/training/promote.py", line 325, in <module>
+    main()
+  File "/home/zachk/Documents/Projects/Chesskers/training/promote.py", line 293, in main
+    result = promote_once(
+             ^^^^^^^^^^^^^
+  File "/home/zachk/Documents/Projects/Chesskers/training/promote.py", line 242, in promote_once
+    win_rate, promoted = run_eval_suite(incumbent, candidate, threshold=threshold)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zachk/Documents/Projects/Chesskers/training/promote.py", line 113, in run_eval_suite
+    proc = subprocess.run(cmd, cwd=engine_dir, capture_output=True, text=True, check=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/usr/lib/python3.12/subprocess.py", line 1955, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'cargo'
+  models: v009 17W / v008 13W / 0D
+  colors: white 18W / black 12W / 0D
+  challenger as white: 10W/5L/0D; as black: 7W/8L/0D
+eval: v009.onnx vs v008.onnx -> 56.7% (gate 55%): PROMOTED
+engine model -> /home/zachk/Documents/Projects/Chesskers/engine/models/v009.onnx
+done: incumbent models/v009.onnx

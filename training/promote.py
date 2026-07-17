@@ -75,8 +75,10 @@ def _stage_models(incumbent: Path, candidate: Path, engine_models: Path) -> tupl
     engine_models.mkdir(parents=True, exist_ok=True)
     inc_stem = version_stem(parse_version(incumbent))
     cand_stem = version_stem(parse_version(candidate))
-    shutil.copy2(incumbent, engine_models / f"{inc_stem}.onnx")
-    shutil.copy2(candidate, engine_models / f"{cand_stem}.onnx")
+    for src, stem in ((incumbent, inc_stem), (candidate, cand_stem)):
+        dst = engine_models / f"{stem}.onnx"
+        if src.resolve() != dst.resolve():
+            shutil.copy2(src, dst)
     return cand_stem, inc_stem
 
 
